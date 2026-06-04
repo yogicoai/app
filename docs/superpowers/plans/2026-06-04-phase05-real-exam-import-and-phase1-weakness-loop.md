@@ -98,13 +98,21 @@ export async function extractPdfPages(path: string): Promise<string[]> {
 
 - [ ] **체크포인트 ✋ Step 3: 샘플 PDF 1개로 덤프 확인**
 
-사장님이 gosi.kr에서 **문제 PDF 1개 + 해당 정답표 PDF 1개**를 `server/content/raw/` 아래에 둔다(예: `2024-국가직-국어.pdf`, `2024-국가직-정답.pdf`). 그 뒤:
+사장님이 gosi.kr에서 **문제 PDF 1개 + 해당 정답표 PDF 1개**를 `server/content/raw/`에 둔다. gosi.kr 9급 국가직은 보통 **가/나책형 한 책자에 전 과목이 묶여** 제공되므로, 파일명·구조 규칙(과목별 분리 vs 한 책자)은 이 덤프 결과로 확정한다(아래 4개 확인 항목 참조). 그 뒤:
 
 Run (`server/`):
 ```bash
-npx tsx -e "import('./src/lib/pdf/extract.ts').then(async m => { const p = await m.extractPdfPages('content/raw/2024-국가직-국어.pdf'); console.log('페이지', p.length); console.log(p[0].slice(0, 800)) })"
+npx tsx -e "import('./src/lib/pdf/extract.ts').then(async m => { const p = await m.extractPdfPages('content/raw/<파일명>.pdf'); console.log('페이지', p.length); console.log(p[0].slice(0, 800)) })"
 ```
-Expected: 페이지 수와 1페이지 텍스트 일부 출력. **함께 확인할 것**: 문항 번호(`1.` `문 1.`), 보기 기호(`①②③④` 또는 `㉠`), 한자/표 깨짐 여부. 이 형식이 A2 파서·프롬프트 설계를 결정한다. (커밋 없음 — 의존성+유틸만 별도 커밋)
+Expected: 페이지 수와 1페이지 텍스트 일부 출력. **함께 확인할 4가지**(A2 파서·프롬프트·A3 규칙을 결정):
+  1. **텍스트 추출 여부** — 빈/깨진 출력이면 스캔본 → **OCR 경로 필요**(게이트, 아래 주석).
+  2. **과목 경계** — 한 책자에 전 과목이면 본문에서 과목 헤더("국 어","영 어","한국사","행정법총론","행정학개론")로 분할해야 함. 파일명 규칙(`YYYY_시험_급수.pdf` 언더스코어, 한 책자)을 채택하고 `parseMeta`/import를 거기에 맞춤.
+  3. **문항/보기 기호** — `1.`/`문 1.`, `①②③④(⑤)`, 한자 혼용·표 깨짐.
+  4. **정답표 형식** — 별도 PDF인지, `1 ③ 2 ① …` 나열인지 표인지(A3 `parseAnswerKey` 정규식 결정).
+
+(커밋 없음 — 의존성+유틸만 별도 커밋)
+
+> ⚠️ **OCR 게이트:** 스캔본이면 `pdfjs` 텍스트 추출이 비고, OCR(예: `tesseract` 한국어 traineddata) 전처리 단계가 추가된다 — 별도 작업으로 분기. 텍스트 선택 가능한 PDF면 불필요.
 
 - [ ] **Step 4: Commit (의존성+추출 유틸)**
 
