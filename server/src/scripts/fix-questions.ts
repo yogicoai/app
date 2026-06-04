@@ -58,14 +58,19 @@ async function main() {
     if (miss.length) console.warn(`  ⚠ 재추출 실패: ${miss.join(', ')} — 수동 오버라이드 필요`)
   }
 
-  // 2) 수동 오버라이드
+  // 2) 수동 오버라이드 (passage 지원 — 이미지 지문 등)
   const manualPath = `content/manual/${YEAR}_${SUBJECT}.json`
   const raw = await readFile(manualPath, 'utf8').catch(() => null)
   if (raw) {
-    const overrides: { number: number; questionText: string; choices: string[]; answerIndex?: number }[] = JSON.parse(raw)
+    const overrides: { number: number; passage?: string; questionText: string; choices: string[]; answerIndex?: number }[] = JSON.parse(raw)
     for (const o of overrides) {
       const ai = o.answerIndex ?? (answers[o.number - 1] ?? 1) - 1
-      await upsert(SUBJECT, { number: o.number, questionText: o.questionText, choices: o.choices, answerIndex: ai })
+      const key = `${YEAR}-${EXAM_TYPE}-${SUBJECT}-${o.number}`
+      await QuestionModel.findOneAndUpdate(
+        { key },
+        { key, subject: SUBJECT, year: YEAR, examType: EXAM_TYPE, number: o.number, passage: o.passage ?? null, questionText: o.questionText, choices: o.choices, answerIndex: ai, source: '기출' },
+        { upsert: true, setDefaultsOnInsert: true },
+      )
     }
     console.log(`수동 오버라이드 적용: ${overrides.map((o) => o.number).join(', ')} (${manualPath})`)
   }

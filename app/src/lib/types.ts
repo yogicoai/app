@@ -1,6 +1,7 @@
 export interface Question {
   _id: string
   subject: string
+  passage?: string // 지문(있을 때만). 발문은 questionText.
   questionText: string
   choices: string[]
   answerIndex: number

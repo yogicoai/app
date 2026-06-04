@@ -1,5 +1,25 @@
 import { describe, it, expect } from 'vitest'
-import { validateExtracted, mergeAnswerKey, parseAnswerTable, normalizePageText, tidyText, assembleDocItems, parseFileMeta, stripChoiceMarker } from './parse'
+import { validateExtracted, mergeAnswerKey, parseAnswerTable, normalizePageText, tidyText, assembleDocItems, parseFileMeta, stripChoiceMarker, structurePassage } from './parse'
+
+describe('structurePassage', () => {
+  it('○ 불릿을 줄바꿈으로 분리한다', () => {
+    expect(structurePassage('원칙 ○ 첫째 ○ 둘째')).toBe('원칙\n○ 첫째\n○ 둘째')
+  })
+  it('시 구절 구분 " / " 를 줄바꿈으로', () => {
+    expect(structurePassage('강호에 병이 깊어 / 관동 팔백리에')).toBe('강호에 병이 깊어\n관동 팔백리에')
+  })
+  it('URL 의 // 는 깨뜨리지 않는다', () => {
+    expect(structurePassage('사이트 https://water.com 참고')).toBe('사이트 https://water.com 참고')
+  })
+  it('마침표 뒤 번호 항목을 분리한다', () => {
+    expect(structurePassage('기원합니다. 2. 본원은')).toBe('기원합니다.\n2. 본원은')
+  })
+  it('<보기> ㄱㄴㄷ 항목을 분리한다(각 진술은 마침표로 끝남)', () => {
+    expect(structurePassage('고르면? ㄱ. 강화한다. ㄴ. 약화한다. ㄷ. 무관하다.')).toBe(
+      '고르면?\nㄱ. 강화한다.\nㄴ. 약화한다.\nㄷ. 무관하다.',
+    )
+  })
+})
 
 const SUBJECTS = ['국어', '영어', '한국사', '행정법총론', '행정학개론']
 

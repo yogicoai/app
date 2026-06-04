@@ -179,7 +179,15 @@ export default function QuizScreen() {
           <ProgressBar value={(idx / questions.length) * 100} />
         </View>
 
-        <Txt variant="h1">{q.questionText}</Txt>
+        {q.passage ? (
+          <Card style={{ backgroundColor: color.surface }}>
+            <Txt variant="body" color={color.textSecondary} style={{ lineHeight: 24 }}>
+              {q.passage}
+            </Txt>
+          </Card>
+        ) : null}
+
+        <Txt variant="h2">{q.questionText}</Txt>
 
         <View>
           {q.choices.map((c, i) => (

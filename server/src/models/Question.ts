@@ -6,7 +6,8 @@ const questionSchema = new Schema(
     year: { type: Number },
     round: { type: String }, // 회차
     source: { type: String, default: '기출' }, // 기출 | AI | seed
-    questionText: { type: String, required: true },
+    passage: { type: String }, // 지문(여러 문항 공유 가능). 발문은 questionText 에.
+    questionText: { type: String, required: true }, // 발문(물음)
     choices: { type: [String], required: true }, // 보기
     answerIndex: { type: Number, required: true }, // 정답 (0-based)
     explanation: { type: String }, // 해설

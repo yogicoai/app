@@ -14,6 +14,19 @@ export function normalizePageText(s: string): string {
   return s.replace(/\s+/g, ' ').trim()
 }
 
+// 한 줄로 평탄화된 지문에 구조적 줄바꿈을 보강한다(내용 단어는 보존, 마커 경계에만 \n 삽입).
+// 안전장치: " / "(앞뒤 공백)만 줄바꿈 → URL "https://"(공백 없음)은 그대로.
+export function structurePassage(text: string): string {
+  return text
+    .replace(/\s+\/\s+/g, '\n') // 시(詩) 구절 구분 " / "
+    .replace(/\s*○\s*/g, '\n○ ') // ○ 불릿 항목
+    .replace(/(?<=[.?!])\s+(?=\d{1,2}\.\s)/g, '\n') // 문장부호 뒤 번호 항목(1. 2. …)
+    .replace(/(?<=[.?!])\s+(?=[ㄱ-ㅎ]\.\s)/g, '\n') // 문장부호 뒤 <보기> 항목(ㄱ. ㄴ. ㄷ.)
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/^\s+/, '')
+    .trim()
+}
+
 // 선택지 앞에 붙은 번호 기호(①②③④⑤)를 제거("① ㄱ"→"ㄱ"). 보기 표지 ㉠㉡ 은 건드리지 않는다.
 // 단 번호만 있는 경우(삽입형 문항의 위치 선택지 "①" 등)는 그대로 보존한다.
 export function stripChoiceMarker(c: string): string {
