@@ -7,3 +7,7 @@ dist/
 
 # 기출 원본 PDF (저작권/용량) — 변환된 JSON만 커밋
 content/raw/*.pdf
+
+# 콘텐츠 감사 덤프 · 일회용 임시 스크립트(_ 접두)
+.audit/
+src/scripts/_*.ts
