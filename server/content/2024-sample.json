@@ -1,0 +1,59 @@
+{
+  "meta": { "source": "sample", "examType": "국가직(샘플)", "year": 2024, "grade": "9급", "track": "일반행정" },
+  "questions": [
+    {
+      "subject": "국어",
+      "number": 1,
+      "questionText": "다음 중 표준어가 아닌 것은?",
+      "choices": ["강낭콩", "사글세", "무우", "끄나풀"],
+      "answerIndex": 2,
+      "explanation": "'무우'는 비표준어이며 '무'가 표준어이다.",
+      "tags": ["표준어"]
+    },
+    {
+      "subject": "영어",
+      "number": 2,
+      "questionText": "Choose the word closest in meaning to 'abolish'.",
+      "choices": ["establish", "eliminate", "maintain", "postpone"],
+      "answerIndex": 1,
+      "explanation": "abolish(폐지하다) ≈ eliminate(없애다).",
+      "tags": ["어휘"]
+    },
+    {
+      "subject": "한국사",
+      "number": 3,
+      "questionText": "훈민정음을 창제한 조선의 왕은?",
+      "choices": ["태종", "세종", "성종", "정조"],
+      "answerIndex": 1,
+      "explanation": "훈민정음은 1443년 세종대왕이 창제하였다.",
+      "tags": ["조선전기"]
+    },
+    {
+      "subject": "한국사",
+      "number": 4,
+      "questionText": "나당전쟁에서 신라가 당군을 격퇴한 전투로 옳은 것은?",
+      "choices": ["살수대첩", "매소성·기벌포 전투", "귀주대첩", "행주대첩"],
+      "answerIndex": 1,
+      "explanation": "매소성(675)·기벌포(676) 전투로 당군을 격퇴하고 삼국통일을 완성했다.",
+      "tags": ["통일신라"]
+    },
+    {
+      "subject": "행정법",
+      "number": 5,
+      "questionText": "다음 중 행정행위의 효력에 해당하지 않는 것은?",
+      "choices": ["공정력", "확정력", "강제력", "소급력"],
+      "answerIndex": 3,
+      "explanation": "공정력·확정력·강제력 등이 효력이며, 소급력은 해당하지 않는다.",
+      "tags": ["행정행위"]
+    },
+    {
+      "subject": "행정학",
+      "number": 6,
+      "questionText": "신공공관리론(NPM)의 특징으로 옳지 않은 것은?",
+      "choices": ["성과 중심 관리", "고객 지향", "시장 메커니즘 도입", "계층제 강화"],
+      "answerIndex": 3,
+      "explanation": "NPM은 탈관료제·분권을 지향하므로 계층제 강화는 거리가 멀다.",
+      "tags": ["NPM"]
+    }
+  ]
+}

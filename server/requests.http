@@ -1,0 +1,65 @@
+### 중간 서버 수동 테스트 (VS Code "REST Client" 확장 필요)
+### 각 ### 블록 위의 "Send Request" 클릭으로 호출.
+@base = http://localhost:4000
+
+### 루트 안내
+GET {{base}}/
+
+### 헬스체크
+GET {{base}}/health
+
+### ───────── 베타: 회원가입 없는 디바이스 플로우 ─────────
+
+### 디바이스 익명 토큰 발급 → 토큰 자동 캡처
+# @name device
+POST {{base}}/auth/device
+Content-Type: application/json
+
+{ "deviceId": "device-abc-12345678" }
+
+###
+@dtoken = {{device.response.body.token}}
+
+### 오늘의 세트 (여기서 questionId 복사)
+GET {{base}}/content/today
+
+### 익명 유저로 풀이 기록 — questionId 붙여넣기
+POST {{base}}/progress/attempt
+Authorization: Bearer {{dtoken}}
+Content-Type: application/json
+
+{ "questionId": "PUT_QUESTION_ID_HERE", "correct": true }
+
+### 진도율 요약 (익명 유저)
+GET {{base}}/progress/summary
+Authorization: Bearer {{dtoken}}
+
+### 복습 예정
+GET {{base}}/progress/due
+Authorization: Bearer {{dtoken}}
+
+### (선택) 익명 → 이메일 계정으로 승격 (진도율 유지)
+POST {{base}}/auth/link
+Authorization: Bearer {{dtoken}}
+Content-Type: application/json
+
+{ "email": "me@example.com", "password": "test1234" }
+
+### ───────── 이메일 계정 플로우 (선택) ─────────
+
+### 고정 dev 계정 로그인 → 토큰 캡처
+# @name login
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "email": "dev@gongmuwon.test", "password": "devpass1234" }
+
+###
+@token = {{login.response.body.token}}
+
+### 내 정보
+GET {{base}}/auth/me
+Authorization: Bearer {{token}}
+
+### 과목별 문제 목록
+GET {{base}}/content/questions?subject=한국사&limit=10

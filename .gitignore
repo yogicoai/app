@@ -1,0 +1,22 @@
+# 의존성
+node_modules/
+
+# 환경변수/시크릿
+.env
+.env.local
+.env*.local
+
+# 빌드 산출물
+dist/
+build/
+web-build/
+.expo/
+
+# 로그/OS
+*.log
+.DS_Store
+Thumbs.db
+
+# 기출 원본 PDF (저작권/용량) — 변환된 JSON만 커밋
+content/raw/*.pdf
+**/content/raw/*.pdf

@@ -1,0 +1,59 @@
+{
+  "meta": { "source": "sample", "examType": "지방직(샘플)", "year": 2023, "grade": "9급", "track": "일반행정" },
+  "questions": [
+    {
+      "subject": "국어",
+      "number": 1,
+      "questionText": "다음 중 띄어쓰기가 옳은 것은?",
+      "choices": ["할수있다", "할 수 있다", "할수 있다", "할 수있다"],
+      "answerIndex": 1,
+      "explanation": "'수'는 의존명사이므로 앞말과 띄어 쓴다.",
+      "tags": ["띄어쓰기"]
+    },
+    {
+      "subject": "국어",
+      "number": 2,
+      "questionText": "다음 중 맞춤법이 옳지 않은 것은?",
+      "choices": ["설거지", "희한하다", "우레", "금새"],
+      "answerIndex": 3,
+      "explanation": "'금새'는 잘못된 표기이며 '금세'가 옳다.",
+      "tags": ["맞춤법"]
+    },
+    {
+      "subject": "영어",
+      "number": 3,
+      "questionText": "Choose the word closest in meaning to 'meticulous'.",
+      "choices": ["careless", "careful", "generous", "rapid"],
+      "answerIndex": 1,
+      "explanation": "meticulous(꼼꼼한) ≈ careful.",
+      "tags": ["어휘"]
+    },
+    {
+      "subject": "한국사",
+      "number": 4,
+      "questionText": "다음 중 조선 후기 실학자가 아닌 인물은?",
+      "choices": ["정약용", "박지원", "이황", "유형원"],
+      "answerIndex": 2,
+      "explanation": "이황은 16세기 성리학자로 실학자가 아니다.",
+      "tags": ["실학"]
+    },
+    {
+      "subject": "행정법",
+      "number": 5,
+      "questionText": "행정행위의 하자가 중대하고 명백한 경우 그 효력은?",
+      "choices": ["취소", "무효", "철회", "정지"],
+      "answerIndex": 1,
+      "explanation": "중대명백설에 따라 무효이다.",
+      "tags": ["하자"]
+    },
+    {
+      "subject": "행정학",
+      "number": 6,
+      "questionText": "제한된 합리성을 전제로 만족할 만한 대안을 선택한다고 본 모형은?",
+      "choices": ["합리모형", "만족모형", "점증모형", "최적모형"],
+      "answerIndex": 1,
+      "explanation": "사이먼(Simon)의 만족모형(bounded rationality).",
+      "tags": ["의사결정"]
+    }
+  ]
+}
