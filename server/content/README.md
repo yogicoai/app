@@ -37,6 +37,7 @@
 ```bash
 npm run import   # content/*.json → questions 적재(검증 포함)
 npm run daily    # 뱅크에서 오늘의 세트 구성(과목별 2문항, 날짜 회전)
+npm run tag      # DB 미태깅 문제 → OpenAI 로 unit/concept/난이도 태깅(멱등)
 npm run setup    # seed(dev계정) + import + daily 한 번에
 ```
 

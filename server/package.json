@@ -12,6 +12,7 @@
     "smoke": "tsx src/scripts/smoke.ts",
     "import": "tsx src/scripts/import-content.ts",
     "daily": "tsx src/scripts/build-daily-set.ts",
+    "tag": "tsx src/scripts/tag-questions.ts",
     "setup": "npm run seed && npm run import && npm run daily",
     "test": "vitest run",
     "test:watch": "vitest"
