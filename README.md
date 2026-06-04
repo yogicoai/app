@@ -82,13 +82,14 @@ npx expo start --web   # 브라우저로 빠른 화면 확인 (localhost:8081)
 - [x] **Task 3** Question 스키마에 `unit`/`concept`/`tagSource` 추가
 - [x] **Task 4** OpenAI 환경변수 + 클라이언트 래퍼(`src/lib/ai/openai.ts`)
 - [x] **Task 5** 태깅 순수 로직(`src/lib/ai/tagger.ts`) + 단위 테스트 9/9
-- [x] **Task 6** 태깅 배치 스크립트(`src/scripts/tag-questions.ts`, 멱등) — 코드 완성
-- [ ] **Task 6 실행검증 / Task 7 전체 태깅** — ⏸️ **블로커: `server/.env`에 `OPENAI_API_KEY` 설정 필요**
+- [x] **Task 6** 태깅 배치 스크립트(`src/scripts/tag-questions.ts`, 멱등) — 코드 완성 + 실행검증(3건 시범 → 멱등성 확인)
+- [x] **Task 7** 전체 태깅 — 27/27 문제 `unit`/`concept`/`tagSource:'ai'` 채움(실패 0). 검토 후 프롬프트 튜닝(과목명 unit 금지·일관 표기)으로 재태깅
+
+> ✅ **Phase 0 완료.** 분류 품질 검토 결과 unit이 교과서 중단원 수준(예: `조선 후기 실학`, `행정행위`)으로 일관 분류됨.
 
 ### 다음 단계
-1. `server/.env`에 `OPENAI_API_KEY` 추가 → 3건 시범 태깅 → 전체 태깅 → Phase 0 완료
-2. **Phase 1** 약점 루프(DB 집계 엔진 + 콜드스타트 AI 진단), 그 전 실기출 적재
-3. 이후 모의고사 → AI 해설 → 푸시 알림 → 회원가입/결제 (각 Phase 별도 계획서)
+1. **Phase 1** 약점 루프(DB 집계 엔진 + 콜드스타트 AI 진단), 그 전 실기출 적재
+2. 이후 모의고사 → AI 해설 → 푸시 알림 → 회원가입/결제 (각 Phase 별도 계획서)
 
 ---
 
