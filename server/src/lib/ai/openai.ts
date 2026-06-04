@@ -1,0 +1,26 @@
+import OpenAI from 'openai'
+import { env } from '../../config/env'
+
+let client: OpenAI | null = null
+
+function getClient(): OpenAI {
+  if (!env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY 가 설정되지 않았습니다. .env 를 확인하세요.')
+  }
+  if (!client) client = new OpenAI({ apiKey: env.OPENAI_API_KEY })
+  return client
+}
+
+// 시스템+유저 프롬프트로 JSON 문자열 응답을 받아 그대로 반환한다(파싱은 호출측 책임).
+export async function chatJson(system: string, user: string): Promise<string> {
+  const res = await getClient().chat.completions.create({
+    model: env.OPENAI_MODEL,
+    temperature: 0,
+    response_format: { type: 'json_object' },
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content: user },
+    ],
+  })
+  return res.choices[0]?.message?.content ?? ''
+}

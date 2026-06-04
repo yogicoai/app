@@ -7,6 +7,8 @@ const schema = z.object({
   MONGODB_URI: z.string().min(1, 'MONGODB_URI 환경변수가 필요합니다.'),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET 은 최소 16자 이상이어야 합니다.'),
   CORS_ORIGIN: z.string().default('*'),
+  OPENAI_API_KEY: z.string().optional(),
+  OPENAI_MODEL: z.string().default('gpt-4o-mini'),
 })
 
 const parsed = schema.safeParse(process.env)
