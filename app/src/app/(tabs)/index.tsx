@@ -1,28 +1,27 @@
-import { ScrollView, View } from 'react-native'
+import { ScrollView, View, Pressable } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../../lib/api'
-import type { TodayResponse, SummaryResponse } from '../../lib/types'
+import type { DailySubjectsResponse, SummaryResponse } from '../../lib/types'
 import { Screen } from '../../components/Screen'
 import { Txt } from '../../components/Txt'
 import { Card } from '../../components/Card'
-import { Button } from '../../components/Button'
 import { ProgressBar } from '../../components/ProgressBar'
 import { StatCard } from '../../components/StatCard'
 import { color, space } from '../../theme/tokens'
 
 export default function HomeScreen() {
   const router = useRouter()
-  const today = useQuery({
-    queryKey: ['today'],
-    queryFn: () => apiFetch<TodayResponse>('/content/today', { auth: false }),
+  const daily = useQuery({
+    queryKey: ['daily-subjects'],
+    queryFn: () => apiFetch<DailySubjectsResponse>('/content/daily', { auth: false }),
   })
   const summary = useQuery({
     queryKey: ['summary'],
     queryFn: () => apiFetch<SummaryResponse>('/progress/summary'),
   })
 
-  const subjects = today.data ? Array.from(new Set(today.data.questions.map((q) => q.subject))) : []
+  const dailySubjects = daily.data?.subjects ?? []
   const o = summary.data?.overall
 
   return (
@@ -49,20 +48,30 @@ export default function HomeScreen() {
           <StatCard value={`${o?.attempted ?? 0}`} label="푼 문제" />
         </View>
 
-        <Card>
-          <Txt variant="h2">{today.data?.theme ?? '오늘의 세트'}</Txt>
-          <Txt variant="body" color={color.textSecondary} style={{ marginTop: space.xs }}>
-            {today.data ? `${today.data.questions.length}문제 · ${subjects.join(' · ')}` : '불러오는 중...'}
+        <View>
+          <Txt variant="h2">오늘의 기출</Txt>
+          <Txt variant="caption" color={color.textMuted} style={{ marginTop: space.xs }}>
+            과목을 골라 매일 5문제씩 풀어보세요
           </Txt>
-          <Button
-            title="학습 시작"
-            onPress={() => router.push('/quiz')}
-            disabled={!today.data || today.data.questions.length === 0}
-            style={{ marginTop: space.lg }}
-          />
-        </Card>
+        </View>
+        {dailySubjects.map((s) => (
+          <Pressable
+            key={s.subject}
+            onPress={() => router.push(`/quiz?daily=1&subject=${encodeURIComponent(s.subject)}`)}
+          >
+            <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flex: 1 }}>
+                <Txt variant="bodyBold">{s.subject}</Txt>
+                <Txt variant="caption" color={color.textMuted} style={{ marginTop: 2 }}>
+                  오늘의 {s.count}문제
+                </Txt>
+              </View>
+              <Txt variant="body" color={color.primary}>풀기 ›</Txt>
+            </Card>
+          </Pressable>
+        ))}
 
-        {(today.isError || summary.isError) && (
+        {(daily.isError || summary.isError) && (
           <Txt variant="caption" color={color.error}>
             데이터를 불러오지 못했어요. 서버 연결(config.ts)을 확인하세요.
           </Txt>

@@ -27,6 +27,11 @@ export interface TodayResponse {
   questions: Question[]
 }
 
+export interface DailySubjectsResponse {
+  date: string
+  subjects: { subject: string; count: number }[]
+}
+
 export interface SummaryResponse {
   overall: {
     totalQuestions: number

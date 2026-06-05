@@ -14,6 +14,34 @@ const contentRoutes: FastifyPluginAsync = async (app) => {
     return { date: set?.date ?? date, theme: set?.theme ?? null, questions: set?.questionIds ?? [] }
   })
 
+  // 오늘의 기출 — 과목별 5문제(요일 기반 회전). subject 주면 그 과목 5문제, 없으면 과목별 개수 요약.
+  app.get('/daily', async (req) => {
+    const q = z.object({ subject: z.string().optional() }).parse(req.query)
+    const SUBJECTS = ['국어', '영어', '한국사', '행정법총론', '행정학개론']
+    const PER = 5
+    const date = todayKST()
+    const dayNum = Math.floor(Date.parse(date) / 86400000)
+
+    const pick = async (subject: string) => {
+      const pool = await QuestionModel.find({ subject, source: '기출' }).sort({ year: -1, number: 1 })
+      if (pool.length === 0) return []
+      const start = (dayNum * PER) % pool.length
+      const out = []
+      for (let i = 0; i < Math.min(PER, pool.length); i++) out.push(pool[(start + i) % pool.length])
+      return out
+    }
+
+    if (q.subject) {
+      return { date, subject: q.subject, questions: await pick(q.subject) }
+    }
+    const subjects = []
+    for (const s of SUBJECTS) {
+      const c = await QuestionModel.countDocuments({ subject: s, source: '기출' })
+      if (c > 0) subjects.push({ subject: s, count: Math.min(PER, c) })
+    }
+    return { date, subjects }
+  })
+
   // 문제 목록 (과목 필터)
   app.get('/questions', async (req) => {
     const q = z

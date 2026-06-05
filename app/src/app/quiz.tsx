@@ -18,22 +18,31 @@ type AnswerResult = { subject: string; correct: boolean }
 export default function QuizScreen() {
   const router = useRouter()
   const qc = useQueryClient()
-  const params = useLocalSearchParams<{ year?: string; examType?: string; subject?: string; mode?: string }>()
+  const params = useLocalSearchParams<{ year?: string; examType?: string; subject?: string; mode?: string; daily?: string }>()
   const isExam = !!params.year
+  const isDaily = params.daily === '1' && !!params.subject // 오늘의 기출(과목 선택)
   const realMode = params.mode === 'exam' // 실전 모의고사(즉시 채점·해설 없음, 시간측정)
   const examLabel = isExam
     ? `${params.year} ${params.examType ?? ''} ${params.subject ?? ''}`.replace(/\s+/g, ' ').trim()
-    : '오늘의 학습'
+    : isDaily
+      ? `오늘의 ${params.subject}`
+      : '오늘의 학습'
 
   const query = useQuery({
-    queryKey: isExam ? ['exam', params.year, params.examType, params.subject] : ['today'],
+    queryKey: isExam
+      ? ['exam', params.year, params.examType, params.subject]
+      : isDaily
+        ? ['daily', params.subject]
+        : ['today'],
     queryFn: () =>
       isExam
         ? apiFetch<{ questions: Question[] }>(
             `/content/exam?year=${params.year}&examType=${encodeURIComponent(String(params.examType ?? ''))}` +
               (params.subject ? `&subject=${encodeURIComponent(String(params.subject))}` : ''),
           )
-        : apiFetch<{ questions: Question[] }>('/content/today', { auth: false }),
+        : isDaily
+          ? apiFetch<{ questions: Question[] }>(`/content/daily?subject=${encodeURIComponent(String(params.subject))}`, { auth: false })
+          : apiFetch<{ questions: Question[] }>('/content/today', { auth: false }),
   })
 
   const [idx, setIdx] = useState(0)
@@ -47,7 +56,9 @@ export default function QuizScreen() {
   // 이어풀기: 진행 상태 로컬 저장/복원
   const progressKey = isExam
     ? quizKey({ year: params.year, examType: params.examType, subject: params.subject })
-    : quizKey('today')
+    : isDaily
+      ? `daily:${params.subject}`
+      : quizKey('today')
   const [restored, setRestored] = useState(false)
   const [resumed, setResumed] = useState(false)
 
