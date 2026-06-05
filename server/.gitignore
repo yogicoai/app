@@ -11,3 +11,4 @@ content/raw/*.pdf
 # 콘텐츠 감사 덤프 · 일회용 임시 스크립트(_ 접두)
 .audit/
 src/scripts/_*.ts
+src/scripts/_*.cjs

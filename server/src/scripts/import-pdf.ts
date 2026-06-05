@@ -47,7 +47,10 @@ async function main() {
     if (ONLY_EXAM && meta.examType !== ONLY_EXAM) continue
     if (ONLY_YEARS.length && !ONLY_YEARS.includes(meta.year)) continue
 
-    const answers = tables.get(`${meta.year}|${meta.examType}`)?.[meta.subject]
+    // 정답표 과목명이 부연(예: "행정학개론 (지방행정 포함)" → pdfjs가 괄호 제거 시 "행정학개론 지방행정 포함")로
+    // 정확매칭 실패할 수 있어, 없으면 접두어로 매칭한다.
+    const table = tables.get(`${meta.year}|${meta.examType}`)
+    const answers = table?.[meta.subject] ?? (table ? table[Object.keys(table).find((k) => k.startsWith(meta.subject!)) ?? ''] : undefined)
     if (!answers) {
       console.warn(`· 정답표 없음(${meta.year} ${meta.examType} ${meta.subject}), 건너뜀: ${pf}`)
       continue
