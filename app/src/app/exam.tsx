@@ -1,12 +1,14 @@
+import { useCallback, useState } from 'react'
 import { ScrollView, View, Pressable } from 'react-native'
-import { useRouter, useLocalSearchParams } from 'expo-router'
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../lib/api'
+import { listProgress, quizKey, type QuizProgress } from '../lib/quizProgress'
 import type { ExamSummary } from '../lib/types'
 import { Screen } from '../components/Screen'
 import { Txt } from '../components/Txt'
 import { Card } from '../components/Card'
-import { color, space } from '../theme/tokens'
+import { color, space, radius } from '../theme/tokens'
 
 // 특정 기출(년도+시험유형)의 과목 목록 → 과목 선택해 풀이
 export default function ExamSubjectsScreen() {
@@ -22,6 +24,23 @@ export default function ExamSubjectsScreen() {
   )
   const total = subjects.reduce((a, s) => a + s.count, 0)
 
+  // 이어풀기 진행 상태(화면 포커스마다 갱신)
+  const [progress, setProgress] = useState<Record<string, QuizProgress>>({})
+  useFocusEffect(
+    useCallback(() => {
+      let active = true
+      listProgress().then((list) => {
+        if (!active) return
+        const map: Record<string, QuizProgress> = {}
+        list.forEach((p) => (map[p.key] = p))
+        setProgress(map)
+      })
+      return () => {
+        active = false
+      }
+    }, []),
+  )
+
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
@@ -34,28 +53,39 @@ export default function ExamSubjectsScreen() {
           </Txt>
         </View>
 
-        {subjects.map((e) => (
-          <Pressable
-            key={e.subject ?? e.examType}
-            onPress={() =>
-              router.push(
-                `/quiz?year=${e.year}&examType=${encodeURIComponent(e.examType)}&subject=${encodeURIComponent(e.subject)}`,
-              )
-            }
-          >
-            <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flex: 1 }}>
-                <Txt variant="bodyBold">{e.subject}</Txt>
-                <Txt variant="caption" color={color.textMuted} style={{ marginTop: 2 }}>
-                  {e.count}문제
-                </Txt>
-              </View>
-              <Txt variant="body" color={color.primary}>
-                풀기 ›
-              </Txt>
-            </Card>
-          </Pressable>
-        ))}
+        {subjects.map((e) => {
+          const prog = progress[quizKey({ year: String(e.year), examType: e.examType, subject: e.subject })]
+          return (
+            <Pressable
+              key={e.subject ?? e.examType}
+              onPress={() =>
+                router.push(
+                  `/quiz?year=${e.year}&examType=${encodeURIComponent(e.examType)}&subject=${encodeURIComponent(e.subject)}`,
+                )
+              }
+            >
+              <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flex: 1 }}>
+                  <Txt variant="bodyBold">{e.subject}</Txt>
+                  <Txt variant="caption" color={color.textMuted} style={{ marginTop: 2 }}>
+                    {e.count}문제
+                  </Txt>
+                </View>
+                {prog ? (
+                  <View style={{ backgroundColor: color.primarySoft, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: radius.pill }}>
+                    <Txt variant="caption" color={color.primary}>
+                      이어풀기 {prog.idx}/{prog.total}
+                    </Txt>
+                  </View>
+                ) : (
+                  <Txt variant="body" color={color.primary}>
+                    풀기 ›
+                  </Txt>
+                )}
+              </Card>
+            </Pressable>
+          )
+        })}
       </ScrollView>
     </Screen>
   )

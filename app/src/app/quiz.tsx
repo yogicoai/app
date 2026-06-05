@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../lib/api'
+import { quizKey, loadProgress, saveProgress, clearProgress } from '../lib/quizProgress'
 import type { Question } from '../lib/types'
 import { Screen } from '../components/Screen'
 import { Txt } from '../components/Txt'
@@ -41,6 +42,47 @@ export default function QuizScreen() {
   const [done, setDone] = useState(false)
 
   const questions = query.data?.questions ?? []
+
+  // 이어풀기: 진행 상태 로컬 저장/복원
+  const progressKey = isExam
+    ? quizKey({ year: params.year, examType: params.examType, subject: params.subject })
+    : quizKey('today')
+  const [restored, setRestored] = useState(false)
+  const [resumed, setResumed] = useState(false)
+
+  useEffect(() => {
+    if (restored || questions.length === 0) return
+    let cancelled = false
+    loadProgress(progressKey).then((p) => {
+      if (cancelled) return
+      if (p && p.total === questions.length && p.idx < p.total && (p.idx > 0 || p.results.length > 0)) {
+        setIdx(p.idx)
+        setSelected(p.selected)
+        setAnswered(p.answered)
+        setResults(p.results)
+        setResumed(true)
+      }
+      setRestored(true)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [questions.length, restored, progressKey])
+
+  useEffect(() => {
+    if (!restored || done || questions.length === 0) return
+    if (idx === 0 && results.length === 0 && !answered) return // 진행 없음
+    saveProgress({
+      key: progressKey,
+      label: examLabel,
+      idx,
+      selected,
+      answered,
+      results,
+      total: questions.length,
+      updatedAt: Date.now(),
+    })
+  }, [restored, done, idx, selected, answered, results, questions.length, progressKey, examLabel])
 
   if (query.isLoading) {
     return (
@@ -81,6 +123,8 @@ export default function QuizScreen() {
     const weakest = rows[0]
 
     const reset = () => {
+      clearProgress(progressKey)
+      setResumed(false)
       setIdx(0)
       setSelected(null)
       setAnswered(false)
@@ -152,6 +196,7 @@ export default function QuizScreen() {
   const next = () => {
     if (idx + 1 >= questions.length) {
       qc.invalidateQueries({ queryKey: ['summary'] })
+      clearProgress(progressKey)
       setDone(true)
       return
     }
@@ -181,6 +226,14 @@ export default function QuizScreen() {
           </View>
           <ProgressBar value={(idx / questions.length) * 100} />
         </View>
+
+        {resumed && (
+          <View style={{ backgroundColor: color.primarySoft, paddingHorizontal: space.md, paddingVertical: space.sm, borderRadius: radius.md }}>
+            <Txt variant="caption" color={color.primary}>
+              이어풀기 · {idx + 1}번부터 계속해요
+            </Txt>
+          </View>
+        )}
 
         {q.passage ? (
           <Card style={{ backgroundColor: color.surface }}>
