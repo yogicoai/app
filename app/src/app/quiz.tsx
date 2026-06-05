@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ScrollView, View } from 'react-native'
 import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -18,8 +18,9 @@ type AnswerResult = { subject: string; correct: boolean }
 export default function QuizScreen() {
   const router = useRouter()
   const qc = useQueryClient()
-  const params = useLocalSearchParams<{ year?: string; examType?: string; subject?: string }>()
+  const params = useLocalSearchParams<{ year?: string; examType?: string; subject?: string; mode?: string }>()
   const isExam = !!params.year
+  const realMode = params.mode === 'exam' // 실전 모의고사(즉시 채점·해설 없음, 시간측정)
   const examLabel = isExam
     ? `${params.year} ${params.examType ?? ''} ${params.subject ?? ''}`.replace(/\s+/g, ' ').trim()
     : '오늘의 학습'
@@ -84,6 +85,23 @@ export default function QuizScreen() {
     })
   }, [restored, done, idx, selected, answered, results, questions.length, progressKey, examLabel])
 
+  // 타이머: 문항별 소요시간(약점분석용) + 전체 경과(실전 표시용)
+  const startedAtRef = useRef(Date.now())
+  const qStartRef = useRef(Date.now())
+  const [elapsedSec, setElapsedSec] = useState(0)
+
+  useEffect(() => {
+    qStartRef.current = Date.now() // 문항 바뀌면 측정 시작점 리셋
+  }, [idx])
+
+  useEffect(() => {
+    if (done) return
+    const t = setInterval(() => setElapsedSec(Math.floor((Date.now() - startedAtRef.current) / 1000)), 1000)
+    return () => clearInterval(t)
+  }, [done])
+
+  const fmtTime = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+
   if (query.isLoading) {
     return (
       <Screen>
@@ -136,12 +154,13 @@ export default function QuizScreen() {
       <Screen>
         <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
           <View style={{ alignItems: 'center', gap: space.xs, marginTop: space.lg }}>
-            <Txt variant="caption" color={color.textMuted}>{examLabel}</Txt>
+            <Txt variant="caption" color={color.textMuted}>{realMode ? `🔴 실전 모의고사 · ${examLabel}` : examLabel}</Txt>
             <Txt variant="display" color={color.primary}>
               {correctCount} / {questions.length}
             </Txt>
             <Txt variant="body" color={color.textSecondary}>
               정답률 {Math.round((correctCount / questions.length) * 100)}%
+              {realMode ? ` · 소요 ${fmtTime(elapsedSec)}` : ''}
             </Txt>
           </View>
 
@@ -181,19 +200,7 @@ export default function QuizScreen() {
 
   const q = questions[idx]
 
-  const submit = async () => {
-    if (selected === null) return
-    const isCorrect = selected === q.answerIndex
-    setAnswered(true)
-    setResults((r) => [...r, { subject: q.subject, correct: isCorrect }])
-    try {
-      await apiFetch('/progress/attempt', { method: 'POST', body: { questionId: q._id, correct: isCorrect } })
-    } catch {
-      // 저장 실패는 학습 흐름을 막지 않음
-    }
-  }
-
-  const next = () => {
+  const advance = () => {
     if (idx + 1 >= questions.length) {
       qc.invalidateQueries({ queryKey: ['summary'] })
       clearProgress(progressKey)
@@ -203,6 +210,17 @@ export default function QuizScreen() {
     setIdx((i) => i + 1)
     setSelected(null)
     setAnswered(false)
+  }
+
+  const submit = () => {
+    if (selected === null) return
+    const isCorrect = selected === q.answerIndex
+    const timeSpentMs = Date.now() - qStartRef.current
+    setResults((r) => [...r, { subject: q.subject, correct: isCorrect }])
+    // 저장 실패는 학습 흐름을 막지 않음(fire-and-forget)
+    apiFetch('/progress/attempt', { method: 'POST', body: { questionId: q._id, correct: isCorrect, timeSpentMs } }).catch(() => {})
+    if (realMode) advance() // 실전: 즉시 채점/해설 없이 다음 문항
+    else setAnswered(true)
   }
 
   const choiceState = (i: number): ChoiceState => {
@@ -219,9 +237,11 @@ export default function QuizScreen() {
       <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
         <View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: space.sm }}>
-            <Txt variant="caption" color={color.primary}>{examLabel} · {q.subject}</Txt>
+            <Txt variant="caption" color={color.primary}>
+              {realMode ? '🔴 실전 · ' : ''}{examLabel} · {q.subject}
+            </Txt>
             <Txt variant="caption" color={color.textMuted}>
-              {idx + 1} / {questions.length}
+              {realMode ? `${fmtTime(elapsedSec)} · ` : ''}{idx + 1} / {questions.length}
             </Txt>
           </View>
           <ProgressBar value={(idx / questions.length) * 100} />
@@ -264,10 +284,16 @@ export default function QuizScreen() {
           </Card>
         )}
 
-        {!answered ? (
+        {realMode ? (
+          <Button
+            title={idx + 1 >= questions.length ? '제출하고 채점' : '다음 문제'}
+            onPress={submit}
+            disabled={selected === null}
+          />
+        ) : !answered ? (
           <Button title="확인" onPress={submit} disabled={selected === null} />
         ) : (
-          <Button title={idx + 1 >= questions.length ? '결과 보기' : '다음 문제'} onPress={next} />
+          <Button title={idx + 1 >= questions.length ? '결과 보기' : '다음 문제'} onPress={advance} />
         )}
       </ScrollView>
     </Screen>

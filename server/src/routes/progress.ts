@@ -8,7 +8,9 @@ import { scheduleNext } from '../lib/srs'
 const progressRoutes: FastifyPluginAsync = async (app) => {
   // 문제 풀이 결과 기록 + SRS 재스케줄
   app.post('/attempt', { preHandler: [app.authenticate] }, async (req) => {
-    const body = z.object({ questionId: z.string(), correct: z.boolean() }).parse(req.body)
+    const body = z
+      .object({ questionId: z.string(), correct: z.boolean(), timeSpentMs: z.number().int().nonnegative().optional() })
+      .parse(req.body)
     const userId = req.user.sub
     const now = new Date()
 
@@ -17,6 +19,12 @@ const progressRoutes: FastifyPluginAsync = async (app) => {
       ? { reps: existing.reps, interval: existing.interval, ease: existing.ease }
       : { reps: 0, interval: 0, ease: 2.5 }
     const next = scheduleNext(prev, body.correct, now)
+
+    // 소요시간: 마지막 값 기록 + 누적 평균(이전 attempts 기반 이동평균)
+    const t = body.timeSpentMs ?? 0
+    const n = existing?.attempts ?? 0
+    const prevAvg = existing?.avgTimeMs ?? 0
+    const avgTimeMs = t > 0 ? (n > 0 ? Math.round((prevAvg * n + t) / (n + 1)) : t) : prevAvg
 
     const progress = await ProgressModel.findOneAndUpdate(
       { userId, questionId: body.questionId },
@@ -27,6 +35,8 @@ const progressRoutes: FastifyPluginAsync = async (app) => {
         ease: next.ease,
         nextReviewAt: next.nextReviewAt,
         lastAttemptedAt: now,
+        timeSpentMs: t,
+        avgTimeMs,
         $inc: { attempts: 1 },
       },
       { upsert: true, new: true, setDefaultsOnInsert: true },

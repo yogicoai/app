@@ -13,6 +13,8 @@ const progressSchema = new Schema(
     nextReviewAt: { type: Date },
     lastAttemptedAt: { type: Date },
     attempts: { type: Number, default: 0 }, // 누적 시도 횟수
+    timeSpentMs: { type: Number, default: 0 }, // 마지막 풀이 소요시간(ms)
+    avgTimeMs: { type: Number, default: 0 }, // 누적 평균 소요시간(ms)
   },
   { timestamps: true },
 )

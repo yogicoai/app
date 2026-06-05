@@ -53,6 +53,22 @@ export default function ExamSubjectsScreen() {
           </Txt>
         </View>
 
+        {total > 0 && (
+          <Pressable
+            onPress={() => router.push(`/quiz?year=${params.year}&examType=${encodeURIComponent(String(params.examType ?? ''))}&mode=exam`)}
+          >
+            <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: color.primary }}>
+              <View style={{ flex: 1 }}>
+                <Txt variant="bodyBold" color={color.primary}>🔴 실전 모의고사</Txt>
+                <Txt variant="caption" color={color.textMuted} style={{ marginTop: 2 }}>
+                  전 과목 {total}문제 · 시간 측정 · 채점은 마지막에
+                </Txt>
+              </View>
+              <Txt variant="body" color={color.primary}>시작 ›</Txt>
+            </Card>
+          </Pressable>
+        )}
+
         {subjects.map((e) => {
           const prog = progress[quizKey({ year: String(e.year), examType: e.examType, subject: e.subject })]
           return (
