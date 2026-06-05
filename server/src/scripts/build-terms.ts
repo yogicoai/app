@@ -9,6 +9,7 @@ import { chatJson } from '../lib/ai/openai'
 
 const MODEL = process.env.TERMS_MODEL ?? 'gpt-4o'
 const ONLY = process.env.SUBJECT
+const ONLY_EXAM = process.env.EXAM // 국가직/지방직 (특정 시험만 — 기존 적재분 재처리 방지)
 const RESET = process.env.RESET === '1'
 const YEARS = (process.env.YEARS ?? '').split(',').map((s) => Number(s.trim())).filter((n) => n > 0)
 
@@ -62,6 +63,7 @@ async function main() {
   await connectDb()
   const filter: Record<string, unknown> = { source: '기출' }
   if (ONLY) filter.subject = ONLY
+  if (ONLY_EXAM) filter.examType = ONLY_EXAM
   if (YEARS.length) filter.year = { $in: YEARS }
 
   if (RESET) {

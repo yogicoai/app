@@ -9,6 +9,10 @@ const schema = z.object({
   CORS_ORIGIN: z.string().default('*'),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().default('gpt-4o-mini'),
+  // Claude(Anthropic)로 전환용. 키는 ANTHROPIC_API_KEY 또는 OPENAI_API_KEY(sk-ant- 로 시작)에 둘 수 있다.
+  ANTHROPIC_API_KEY: z.string().optional(),
+  AI_PROVIDER: z.enum(['openai', 'anthropic']).optional(), // 미지정 시 키 형태로 자동 판별
+  ANTHROPIC_MODEL: z.string().default('claude-haiku-4-5'), // 기본(태깅 등 저렴). 상위 호출은 model 로 지정
 })
 
 const parsed = schema.safeParse(process.env)
