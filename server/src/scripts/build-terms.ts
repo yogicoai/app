@@ -1,6 +1,6 @@
-// 용어 사전 생성: 기출 문제의 (subject, unit, concept) 태그를 씨앗으로 AI가 정의를 작성한다.
-// 단원(subject+unit)별로 배치 호출(비용↓). 멱등: 이미 있는 용어(key=subject:term)는 건너뜀.
-// 옵션: SUBJECT(특정 과목만) · TERMS_MODEL(기본 gpt-4o)
+// 용어 사전 생성(키워드형): 각 기출 문제(지문/발문/보기)에서 수험생 핵심 키워드를 뽑아 설명을 단다.
+// concept 주제 구문이 아니라, 시험 출제 포인트가 되는 개념어/법률용어/문법용어 단위로 정리.
+// 멱등: key=subject:term(키워드). 과목 내 같은 키워드는 한 번만. 옵션: SUBJECT · TERMS_MODEL(기본 gpt-4o) · RESET(1이면 기존 AI 용어 삭제 후 재생성)
 import mongoose from 'mongoose'
 import { connectDb } from '../config/db'
 import { QuestionModel } from '../models/Question'
@@ -9,15 +9,29 @@ import { chatJson } from '../lib/ai/openai'
 
 const MODEL = process.env.TERMS_MODEL ?? 'gpt-4o'
 const ONLY = process.env.SUBJECT
+const RESET = process.env.RESET === '1'
 
 const SYSTEM =
-  '너는 9급 공무원 시험 대비 용어 사전 편집자다. 주어진 과목·단원의 핵심 개념들에 대해 ' +
-  '수험생이 이해할 정의를 작성한다. 각 항목: {"term":개념명(주어진 그대로 유지),' +
-  '"definition":2~3문장 정의(핵심 의미 + 시험 포인트),"example":한 줄 예시(없으면 "")}. ' +
-  '정확하고 간결하게, 사실 오류 없이. 반드시 {"terms":[...]} JSON 만 출력한다.'
+  '너는 9급 공무원 시험 대비 용어 사전 편집자다. 주어진 한 문제(지문·발문·보기)에서 ' +
+  '수험생이 반드시 알아야 할 핵심 용어(키워드)를 뽑아 각각 설명한다.\n' +
+  '규칙:\n' +
+  '1) 일반 단어가 아니라 그 과목의 출제 포인트가 되는 개념어/법률용어/문법용어/제도명/인물·사건 위주로 고른다.\n' +
+  '2) term 은 간결한 명사형 키워드(예: "공정력", "불가쟁력", "비례원칙", "갑오개혁", "형태소"). 긴 설명 문장 금지.\n' +
+  '3) definition 은 그 키워드의 핵심을 2~3문장으로(의미 + 시험 포인트). 정확하고 사실 오류 없이.\n' +
+  '4) example 은 한 줄(없으면 ""). \n' +
+  '5) 한 문제에서 3~6개. 문제 풀이와 무관한 잡다한 단어는 넣지 마라.\n' +
+  '반드시 {"terms":[{"term":"","definition":"","example":""}]} JSON 만 출력한다.'
 
-function buildUser(subject: string, unit: string, concepts: string[]): string {
-  return `과목: ${subject}\n단원: ${unit}\n개념 목록:\n${concepts.map((c, i) => `${i + 1}. ${c}`).join('\n')}`
+function buildUser(q: { subject: string; unit?: string; passage?: string; questionText: string; choices: string[] }): string {
+  return [
+    `과목: ${q.subject}`,
+    q.unit ? `단원: ${q.unit}` : '',
+    q.passage ? `지문: ${q.passage}` : '',
+    `발문: ${q.questionText}`,
+    `보기: ${q.choices.join(' / ')}`,
+  ]
+    .filter(Boolean)
+    .join('\n')
 }
 
 interface ParsedTerm {
@@ -39,7 +53,7 @@ function parseTerms(raw: string): ParsedTerm[] {
     const r = t as Record<string, unknown>
     const term = typeof r.term === 'string' ? r.term.trim() : ''
     const definition = typeof r.definition === 'string' ? r.definition.trim() : ''
-    if (!term || !definition) continue
+    if (!term || !definition || term.length > 30) continue // 키워드는 짧아야
     const example = typeof r.example === 'string' && r.example.trim() ? r.example.trim() : undefined
     out.push({ term, definition, example })
   }
@@ -48,60 +62,49 @@ function parseTerms(raw: string): ParsedTerm[] {
 
 async function main() {
   await connectDb()
-  const match: Record<string, unknown> = { source: '기출', concept: { $ne: null } }
-  if (ONLY) match.subject = ONLY
+  const filter: Record<string, unknown> = { source: '기출' }
+  if (ONLY) filter.subject = ONLY
 
-  const rows = await QuestionModel.aggregate([
-    { $match: match },
-    { $group: { _id: { subject: '$subject', unit: '$unit', concept: '$concept' } } },
-  ])
-
-  // (subject, unit) 단위로 concept 묶기
-  const groups = new Map<string, { subject: string; unit: string; concepts: string[] }>()
-  for (const r of rows) {
-    const subject = r._id.subject as string
-    const unit = (r._id.unit as string) ?? '기타'
-    const concept = r._id.concept as string
-    if (!concept) continue
-    const k = `${subject}::${unit}`
-    if (!groups.has(k)) groups.set(k, { subject, unit, concepts: [] })
-    groups.get(k)!.concepts.push(concept)
+  if (RESET) {
+    const del = await TermModel.deleteMany(ONLY ? { source: 'ai', subject: ONLY } : { source: 'ai' })
+    console.log(`기존 AI 용어 ${del.deletedCount}개 삭제(RESET)`)
   }
 
+  const questions = await QuestionModel.find(filter).sort({ subject: 1, number: 1 }).lean()
   let created = 0
-  let skipped = 0
+  let dup = 0
   let failed = 0
-  for (const g of groups.values()) {
-    const existing = new Set(
-      (await TermModel.find({ subject: g.subject, term: { $in: g.concepts } }).select('term')).map(
-        (t) => (t as unknown as { term: string }).term,
-      ),
-    )
-    const todo = [...new Set(g.concepts)].filter((c) => !existing.has(c))
-    if (todo.length === 0) {
-      skipped += g.concepts.length
-      continue
-    }
+  for (const raw of questions) {
+    const q = raw as unknown as { subject: string; unit?: string; passage?: string; questionText: string; choices: string[]; number: number }
     try {
-      const raw = await chatJson(SYSTEM, buildUser(g.subject, g.unit, todo), { model: MODEL })
-      const terms = parseTerms(raw)
+      const res = await chatJson(SYSTEM, buildUser(q), { model: MODEL })
+      const terms = parseTerms(res)
       for (const t of terms) {
-        const key = `${g.subject}:${t.term}`
-        await TermModel.findOneAndUpdate(
-          { key },
-          { key, subject: g.subject, unit: g.unit, term: t.term, definition: t.definition, example: t.example, source: 'ai', model: MODEL },
-          { upsert: true, setDefaultsOnInsert: true },
-        )
+        const key = `${q.subject}:${t.term}`
+        const exists = await TermModel.exists({ key })
+        if (exists) {
+          dup++
+          continue
+        }
+        await TermModel.create({
+          key,
+          subject: q.subject,
+          unit: q.unit,
+          term: t.term,
+          definition: t.definition,
+          example: t.example,
+          source: 'ai',
+          model: MODEL,
+        })
         created++
       }
-      console.log(`✓ [${g.subject}] ${g.unit}: ${terms.length}개`)
+      console.log(`✓ [${q.subject} ${q.number}] ${terms.length}개 (+${terms.length})`)
     } catch (e) {
       failed++
-      console.warn(`✗ [${g.subject}] ${g.unit}:`, (e as Error).message)
+      console.warn(`✗ [${q.subject} ${q.number}]:`, (e as Error).message)
     }
   }
-
-  console.log(`\n용어 생성: ${created}개 · 스킵(기존) ${skipped} · 실패 ${failed}`)
+  console.log(`\n키워드 용어 생성: 신규 ${created} · 중복스킵 ${dup} · 실패 ${failed}`)
   console.log(`terms 총: ${await TermModel.estimatedDocumentCount()}개`)
   await mongoose.disconnect()
 }
