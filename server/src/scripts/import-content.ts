@@ -46,8 +46,9 @@ async function main() {
   }
   const files = fs.readdirSync(CONTENT_DIR).filter((f) => f.endsWith('.json'))
   if (files.length === 0) {
-    console.error('content/*.json 파일이 없습니다.')
-    process.exit(1)
+    // 실기출은 import-pdf 로 적재하므로 content/*.json 이 없어도 정상(setup 이 깨지지 않게).
+    console.log('content/*.json 없음 — JSON 적재 건너뜀(실기출은 npm run import:pdf 사용).')
+    return
   }
 
   await connectDb()
