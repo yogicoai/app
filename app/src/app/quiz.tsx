@@ -11,7 +11,7 @@ import { Card } from '../components/Card'
 import { Button } from '../components/Button'
 import { Choice, ChoiceState } from '../components/Choice'
 import { ProgressBar } from '../components/ProgressBar'
-import { color, space, radius } from '../theme/tokens'
+import { color, space, radius, readingLineHeight } from '../theme/tokens'
 
 type AnswerResult = { subject: string; correct: boolean }
 
@@ -257,7 +257,7 @@ export default function QuizScreen() {
 
         {q.passage ? (
           <Card style={{ backgroundColor: color.surface }}>
-            <Txt variant="body" color={color.textSecondary} style={{ lineHeight: 24 }}>
+            <Txt variant="body" color={color.textSecondary} style={{ lineHeight: readingLineHeight }}>
               {q.passage}
             </Txt>
           </Card>
@@ -267,7 +267,7 @@ export default function QuizScreen() {
 
         <View>
           {q.choices.map((c, i) => (
-            <Choice key={i} label={`${i + 1}. ${c}`} state={choiceState(i)} disabled={answered} onPress={() => setSelected(i)} />
+            <Choice key={i} num={i + 1} text={c} state={choiceState(i)} disabled={answered} onPress={() => setSelected(i)} />
           ))}
         </View>
 
@@ -277,7 +277,7 @@ export default function QuizScreen() {
               {isCorrect ? '정답이에요!' : '아쉬워요'}
             </Txt>
             {q.explanation && (
-              <Txt variant="body" color={color.textSecondary} style={{ marginTop: space.xs }}>
+              <Txt variant="body" color={color.textSecondary} style={{ marginTop: space.xs, lineHeight: readingLineHeight }}>
                 {q.explanation}
               </Txt>
             )}

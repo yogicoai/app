@@ -5,7 +5,7 @@ import type { WrongResponse } from '../lib/types'
 import { Screen } from '../components/Screen'
 import { Txt } from '../components/Txt'
 import { Card } from '../components/Card'
-import { color, space, radius } from '../theme/tokens'
+import { color, space, radius, readingLineHeight } from '../theme/tokens'
 
 // 오답노트: 내가 틀린 문제 + 해설(풀이집)
 export default function WrongScreen() {
@@ -57,7 +57,7 @@ export default function WrongScreen() {
               </View>
               {Q.explanation ? (
                 <View style={{ backgroundColor: color.surface, padding: space.md, borderRadius: radius.md, marginTop: space.xs }}>
-                  <Txt variant="body" color={color.textSecondary} style={{ lineHeight: 22 }}>
+                  <Txt variant="body" color={color.textSecondary} style={{ lineHeight: readingLineHeight }}>
                     {Q.explanation}
                   </Txt>
                 </View>

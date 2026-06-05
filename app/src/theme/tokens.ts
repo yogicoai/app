@@ -9,7 +9,8 @@ export const color = {
   border: '#E2E8F0',
   textPrimary: '#0F172A',
   textSecondary: '#475569',
-  textMuted: '#94A3B8',
+  textMuted: '#64748B', // 대비 강화(기존 #94A3B8 는 흰 배경에서 WCAG AA 미달)
+  textFaint: '#94A3B8', // 정말 흐리게(테두리급 보조)만
   success: '#16A34A',
   successSoft: '#ECFDF3',
   error: '#DC2626',
@@ -19,13 +20,16 @@ export const color = {
 
 export const font = {
   family: 'Pretendard',
-  display: { size: 28, lineHeight: 36, weight: '700' },
-  h1: { size: 22, lineHeight: 30, weight: '700' },
-  h2: { size: 18, lineHeight: 26, weight: '600' },
-  body: { size: 16, lineHeight: 24, weight: '400' },
-  bodyBold: { size: 16, lineHeight: 24, weight: '600' },
-  caption: { size: 13, lineHeight: 18, weight: '400' },
+  display: { size: 28, lineHeight: 38, weight: '700' },
+  h1: { size: 22, lineHeight: 32, weight: '700' },
+  h2: { size: 18, lineHeight: 28, weight: '600' }, // 발문 등 긴 제목 가독성
+  body: { size: 16, lineHeight: 26, weight: '400' }, // 한글 본문 1.6 줄간격
+  bodyBold: { size: 16, lineHeight: 26, weight: '600' },
+  caption: { size: 13, lineHeight: 19, weight: '400' },
 } as const
+
+// 지문·해설처럼 긴 글 읽기용 줄간격
+export const readingLineHeight = 28
 
 // 안드로이드는 단일 TTF에서 굵기를 합성하지 못하므로 weight 별로 별도 Pretendard 파일을 지정한다.
 export const fontFamilyByWeight: Record<string, string> = {

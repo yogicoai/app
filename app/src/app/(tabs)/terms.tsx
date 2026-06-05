@@ -134,7 +134,7 @@ export default function TermsScreen() {
                       </View>
                     </Pressable>
                   </View>
-                  <Txt variant="body" color={color.textSecondary} style={{ marginTop: space.xs, lineHeight: 22 }}>
+                  <Txt variant="body" color={color.textSecondary} style={{ marginTop: space.xs, lineHeight: 25 }}>
                     {t.definition}
                   </Txt>
                   {t.example ? (
