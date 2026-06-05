@@ -10,6 +10,7 @@ import { chatJson } from '../lib/ai/openai'
 const MODEL = process.env.TERMS_MODEL ?? 'gpt-4o'
 const ONLY = process.env.SUBJECT
 const RESET = process.env.RESET === '1'
+const YEARS = (process.env.YEARS ?? '').split(',').map((s) => Number(s.trim())).filter((n) => n > 0)
 
 const SYSTEM =
   '너는 9급 공무원 시험 대비 학습 사전 편집자다. 주어진 한 문제(지문·발문·보기)에서 학습 항목을 뽑아 정리한다. 과목에 따라 방식이 다르다.\n' +
@@ -61,6 +62,7 @@ async function main() {
   await connectDb()
   const filter: Record<string, unknown> = { source: '기출' }
   if (ONLY) filter.subject = ONLY
+  if (YEARS.length) filter.year = { $in: YEARS }
 
   if (RESET) {
     const del = await TermModel.deleteMany(ONLY ? { source: 'ai', subject: ONLY } : { source: 'ai' })

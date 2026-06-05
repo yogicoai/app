@@ -8,6 +8,8 @@ import { chatJson } from '../lib/ai/openai'
 const MODEL = process.env.EXPLAIN_MODEL ?? 'gpt-4o'
 const ONLY = process.env.SUBJECT
 const FORCE = process.env.FORCE === '1'
+// KEYS=키1,키2 지정 시 해당 문항만(FORCE처럼 기존 해설도 재생성). 예: 2022-지방직-한국사-11
+const KEYS = (process.env.KEYS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
 
 const SYSTEM =
   '너는 9급 공무원 시험 해설 강사다. 주어진 문제와 정답 번호를 보고 수험생용 해설을 쓴다.\n' +
@@ -44,7 +46,8 @@ async function main() {
   await connectDb()
   const filter: Record<string, unknown> = { source: '기출' }
   if (ONLY) filter.subject = ONLY
-  if (!FORCE) filter.$or = [{ explanation: { $exists: false } }, { explanation: null }, { explanation: '' }]
+  if (KEYS.length) filter.key = { $in: KEYS } // 지정 키만 재생성(FORCE 무시하고 항상 덮어씀)
+  else if (!FORCE) filter.$or = [{ explanation: { $exists: false } }, { explanation: null }, { explanation: '' }]
 
   const questions = await QuestionModel.find(filter).sort({ subject: 1, number: 1 })
   console.log(`해설 생성 대상: ${questions.length}문항`)
