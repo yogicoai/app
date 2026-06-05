@@ -21,6 +21,7 @@ function sourceLabel(t: Term): string {
 
 export default function TermsScreen() {
   const [subject, setSubject] = useState<string | null>(null)
+  const [year, setYear] = useState<number | null>(null)
   const [known, setKnown] = useState<Set<string>>(new Set())
   const [showKnown, setShowKnown] = useState(false)
 
@@ -48,9 +49,13 @@ export default function TermsScreen() {
 
   const subjects = q.data?.subjects ?? []
   const all = q.data?.terms ?? []
-  const bySubject = subject ? all.filter((t) => t.subject === subject) : all
-  const knownCount = bySubject.filter((t) => known.has(t._id)).length
-  const visible = showKnown ? bySubject : bySubject.filter((t) => !known.has(t._id))
+  const years = [...new Set(all.flatMap((t) => t.years ?? []))].sort((a, b) => b - a)
+  // 연도(출처 기출) + 과목으로 범위 지정
+  const scoped = all.filter(
+    (t) => (!subject || t.subject === subject) && (!year || (t.years ?? []).includes(year)),
+  )
+  const knownCount = scoped.filter((t) => known.has(t._id)).length
+  const visible = showKnown ? scoped : scoped.filter((t) => !known.has(t._id))
 
   const byUnit: Record<string, Term[]> = {}
   visible.forEach((t) => {
@@ -64,9 +69,35 @@ export default function TermsScreen() {
         <View>
           <Txt variant="display">용어정리</Txt>
           <Txt variant="body" color={color.textSecondary} style={{ marginTop: space.xs }}>
-            단원별 핵심 용어·단어 · 총 {bySubject.length}개 · 익힘 {knownCount}개
+            기출 연도·과목별 핵심 용어·단어 · 총 {scoped.length}개 · 익힘 {knownCount}개
           </Txt>
         </View>
+
+        {years.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
+            {['전체', ...years.map(String)].map((y) => {
+              const active = (y === '전체' && !year) || y === String(year)
+              return (
+                <Pressable key={y} onPress={() => setYear(y === '전체' ? null : Number(y))}>
+                  <View
+                    style={{
+                      paddingHorizontal: space.md,
+                      paddingVertical: space.sm,
+                      borderRadius: radius.pill,
+                      backgroundColor: active ? color.navy : color.surface,
+                      borderWidth: 1,
+                      borderColor: active ? color.navy : color.border,
+                    }}
+                  >
+                    <Txt variant="caption" color={active ? color.bg : color.textSecondary}>
+                      {y === '전체' ? '전체 연도' : `${y}년`}
+                    </Txt>
+                  </View>
+                </Pressable>
+              )
+            })}
+          </ScrollView>
+        )}
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.sm }}>
           {['전체', ...subjects].map((s) => {
