@@ -95,7 +95,9 @@ export function assembleDocItems(parsed: unknown): ExtractedItem[] {
 // 행 형태: "<연번> <과목명> <책형> d1 d2 ... d20". 책형(한 글자)+20개 숫자를 앵커로 추출.
 export function parseAnswerTable(text: string): Record<string, number[]> {
   const flat = normalizePageText(text)
-  const re = /([가-힣]+(?:\s[가-힣]+)*)\s([가-힣])\s((?:[1-5]\s){19}[1-5])/g
+  // 책형: 한글(가/나) · 라틴(A/B) · 원문자(Ⓐ/Ⓑ, 지방직) 모두 허용.
+  // 과목명 뒤 괄호 부연(예: "행정학개론 (지방행정 포함)")은 책형 앞에서 건너뛴다.
+  const re = /([가-힣]+(?:\s[가-힣]+)*)\s(?:\([^)]*\)\s)?([가-힣A-ZⒶ-Ⓩ])\s((?:[1-5]\s){19}[1-5])/g
   const out: Record<string, number[]> = {}
   let m: RegExpExecArray | null
   while ((m = re.exec(flat)) !== null) {

@@ -103,6 +103,13 @@ describe('parseAnswerTable (2026 국가직 통합 정답표)', () => {
     const t = parseAnswerTable('5 일기분석 및 예보법 가 3 1 2 2 3 2 3 3 1 3 2 1 1 4 4 4 3 4 2 3')
     expect(t['일기분석 및 예보법']).toHaveLength(20)
   })
+
+  it('원문자 책형(Ⓐ, 지방직)과 과목명 뒤 괄호 부연을 처리한다', () => {
+    const t = parseAnswerTable('31 한국사 Ⓐ 3 1 4 1 1 2 3 3 3 4 2 2 3 2 2 3 4 4 1 2 33 행정학개론 ( 지방행정 포함 ) Ⓐ 1 2 4 1 3 2 3 1 4 2 4 2 2 1 2 3 4 3 1 4')
+    expect(t['한국사']).toHaveLength(20)
+    expect(t['행정학개론']).toHaveLength(20)
+    expect(t['행정학개론']![0]).toBe(1)
+  })
 })
 
 describe('stripChoiceMarker', () => {
