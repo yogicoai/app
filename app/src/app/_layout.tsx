@@ -38,6 +38,7 @@ export default function RootLayout() {
         ) : (
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="exam" options={{ headerShown: true, title: '과목 선택' }} />
             <Stack.Screen name="quiz" options={{ headerShown: true, title: '문제 풀이' }} />
           </Stack>
         )}
