@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, ActivityIndicator } from 'react-native'
 import { Stack } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
+import { useFonts } from 'expo-font'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClient } from '../lib/queryClient'
@@ -12,6 +13,12 @@ import { Txt } from '../components/Txt'
 export default function RootLayout() {
   const [ready, setReady] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fontsLoaded] = useFonts({
+    'Pretendard-Regular': require('../../assets/fonts/Pretendard-Regular.otf'),
+    'Pretendard-Medium': require('../../assets/fonts/Pretendard-Medium.otf'),
+    'Pretendard-SemiBold': require('../../assets/fonts/Pretendard-SemiBold.otf'),
+    'Pretendard-Bold': require('../../assets/fonts/Pretendard-Bold.otf'),
+  })
 
   useEffect(() => {
     ensureSession()
@@ -31,7 +38,7 @@ export default function RootLayout() {
               {'\n\n'}src/lib/config.ts 의 API_BASE 를 PC IP로 설정했는지 확인하세요.
             </Txt>
           </View>
-        ) : !ready ? (
+        ) : !ready || !fontsLoaded ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: color.bg }}>
             <ActivityIndicator color={color.primary} />
           </View>

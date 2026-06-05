@@ -27,6 +27,14 @@ export const font = {
   caption: { size: 13, lineHeight: 18, weight: '400' },
 } as const
 
+// 안드로이드는 단일 TTF에서 굵기를 합성하지 못하므로 weight 별로 별도 Pretendard 파일을 지정한다.
+export const fontFamilyByWeight: Record<string, string> = {
+  '400': 'Pretendard-Regular',
+  '500': 'Pretendard-Medium',
+  '600': 'Pretendard-SemiBold',
+  '700': 'Pretendard-Bold',
+}
+
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 24, xxxl: 32 } as const
 export const radius = { sm: 8, md: 12, lg: 16, xl: 20, pill: 999 } as const
 export const shadow = {
