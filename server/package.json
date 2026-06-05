@@ -16,6 +16,7 @@
     "import:pdf": "tsx src/scripts/import-pdf.ts",
     "fix": "tsx src/scripts/fix-questions.ts",
     "migrate:passage": "tsx src/scripts/split-passage.ts",
+    "terms": "tsx src/scripts/build-terms.ts",
     "setup": "npm run seed && npm run import && npm run daily",
     "test": "vitest run",
     "test:watch": "vitest"

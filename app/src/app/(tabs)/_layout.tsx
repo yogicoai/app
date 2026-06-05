@@ -19,6 +19,13 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="terms"
+        options={{
+          title: '용어정리',
+          tabBarIcon: ({ color: c, size }) => <Ionicons name="library-outline" size={size} color={c} />,
+        }}
+      />
+      <Tabs.Screen
         name="exams"
         options={{
           title: '기출',

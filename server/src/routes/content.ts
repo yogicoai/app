@@ -2,6 +2,7 @@ import type { FastifyPluginAsync } from 'fastify'
 import { z } from 'zod'
 import { DailySetModel } from '../models/DailySet'
 import { QuestionModel } from '../models/Question'
+import { TermModel } from '../models/Term'
 import { todayKST } from '../lib/date'
 
 const contentRoutes: FastifyPluginAsync = async (app) => {
@@ -51,6 +52,15 @@ const contentRoutes: FastifyPluginAsync = async (app) => {
     if (q.subject) filter.subject = q.subject
     const questions = await QuestionModel.find(filter).sort({ subject: 1, number: 1 })
     return { year: q.year, examType: q.examType, subject: q.subject ?? null, questions }
+  })
+
+  // 용어 사전 (과목 필터 선택). 과목 → 단원 → 용어 순으로 정렬해 반환.
+  app.get('/terms', async (req) => {
+    const q = z.object({ subject: z.string().optional() }).parse(req.query)
+    const filter = q.subject ? { subject: q.subject } : {}
+    const terms = await TermModel.find(filter).sort({ subject: 1, unit: 1, term: 1 })
+    const subjects = await TermModel.distinct('subject')
+    return { subjects: (subjects as string[]).sort(), terms }
   })
 }
 

@@ -31,3 +31,17 @@ export interface ExamSummary {
   subject: string
   count: number
 }
+
+export interface Term {
+  _id: string
+  subject: string
+  unit?: string
+  term: string
+  definition: string
+  example?: string
+}
+
+export interface TermsResponse {
+  subjects: string[]
+  terms: Term[]
+}
