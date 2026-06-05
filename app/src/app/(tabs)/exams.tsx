@@ -16,9 +16,11 @@ export default function ExamsScreen() {
   })
 
   const list = exams.data?.exams ?? []
-  const byYear: Record<number, ExamSummary[]> = {}
+  // 년도 → 시험유형 → 과목 목록
+  const byYear: Record<number, Record<string, ExamSummary[]>> = {}
   list.forEach((e) => {
-    ;(byYear[e.year] ??= []).push(e)
+    const y = (byYear[e.year] ??= {})
+    ;(y[e.examType] ??= []).push(e)
   })
   const years = Object.keys(byYear)
     .map(Number)
@@ -30,36 +32,43 @@ export default function ExamsScreen() {
         <View>
           <Txt variant="display">기출문제</Txt>
           <Txt variant="body" color={color.textSecondary} style={{ marginTop: space.xs }}>
-            년도별로 풀고 과목별 약점을 파악하세요.
+            과목별로 풀고 약점을 파악하세요.
           </Txt>
         </View>
 
         {years.length === 0 && (
           <Card>
-            <Txt color={color.textMuted}>등록된 기출이 아직 없어요. content/*.json 적재 후 표시됩니다.</Txt>
+            <Txt color={color.textMuted}>등록된 기출이 아직 없어요. 적재 후 표시됩니다.</Txt>
           </Card>
         )}
 
         {years.map((year) => (
           <View key={year} style={{ gap: space.sm }}>
             <Txt variant="h2">{year}년</Txt>
-            {(byYear[year] ?? []).map((e) => (
-              <Pressable
-                key={e.examType}
-                onPress={() =>
-                  router.push(`/quiz?year=${e.year}&examType=${encodeURIComponent(e.examType)}`)
-                }
-              >
-                <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ flex: 1 }}>
-                    <Txt variant="bodyBold">{e.examType}</Txt>
-                    <Txt variant="caption" color={color.textMuted} style={{ marginTop: 2 }}>
-                      {e.count}문제 · {e.subjects.join(' · ')}
-                    </Txt>
-                  </View>
-                  <Txt variant="body" color={color.primary}>풀기 ›</Txt>
-                </Card>
-              </Pressable>
+            {Object.entries(byYear[year] ?? {}).map(([examType, subjects]) => (
+              <View key={examType} style={{ gap: space.sm }}>
+                <Txt variant="caption" color={color.textMuted}>{examType}</Txt>
+                {subjects.map((e) => (
+                  <Pressable
+                    key={e.subject}
+                    onPress={() =>
+                      router.push(
+                        `/quiz?year=${e.year}&examType=${encodeURIComponent(e.examType)}&subject=${encodeURIComponent(e.subject)}`,
+                      )
+                    }
+                  >
+                    <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <View style={{ flex: 1 }}>
+                        <Txt variant="bodyBold">{e.subject}</Txt>
+                        <Txt variant="caption" color={color.textMuted} style={{ marginTop: 2 }}>
+                          {e.count}문제
+                        </Txt>
+                      </View>
+                      <Txt variant="body" color={color.primary}>풀기 ›</Txt>
+                    </Card>
+                  </Pressable>
+                ))}
+              </View>
             ))}
           </View>
         ))}

@@ -17,16 +17,19 @@ type AnswerResult = { subject: string; correct: boolean }
 export default function QuizScreen() {
   const router = useRouter()
   const qc = useQueryClient()
-  const params = useLocalSearchParams<{ year?: string; examType?: string }>()
+  const params = useLocalSearchParams<{ year?: string; examType?: string; subject?: string }>()
   const isExam = !!params.year
-  const examLabel = isExam ? `${params.year} ${params.examType ?? ''}`.trim() : '오늘의 학습'
+  const examLabel = isExam
+    ? `${params.year} ${params.examType ?? ''} ${params.subject ?? ''}`.replace(/\s+/g, ' ').trim()
+    : '오늘의 학습'
 
   const query = useQuery({
-    queryKey: isExam ? ['exam', params.year, params.examType] : ['today'],
+    queryKey: isExam ? ['exam', params.year, params.examType, params.subject] : ['today'],
     queryFn: () =>
       isExam
         ? apiFetch<{ questions: Question[] }>(
-            `/content/exam?year=${params.year}&examType=${encodeURIComponent(String(params.examType ?? ''))}`,
+            `/content/exam?year=${params.year}&examType=${encodeURIComponent(String(params.examType ?? ''))}` +
+              (params.subject ? `&subject=${encodeURIComponent(String(params.subject))}` : ''),
           )
         : apiFetch<{ questions: Question[] }>('/content/today', { auth: false }),
   })

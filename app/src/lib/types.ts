@@ -28,6 +28,6 @@ export interface SummaryResponse {
 export interface ExamSummary {
   year: number
   examType: string
+  subject: string
   count: number
-  subjects: string[]
 }

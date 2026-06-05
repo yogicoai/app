@@ -26,33 +26,31 @@ const contentRoutes: FastifyPluginAsync = async (app) => {
     return { items }
   })
 
-  // 기출 시험 목록 (년도 + 시험유형별 집계)
+  // 기출 시험 목록 (년도 + 시험유형 + 과목별 집계)
   app.get('/exams', async () => {
     const exams = await QuestionModel.aggregate([
       { $match: { year: { $ne: null } } },
       {
         $group: {
-          _id: { year: '$year', examType: '$examType' },
+          _id: { year: '$year', examType: '$examType', subject: '$subject' },
           count: { $sum: 1 },
-          subjects: { $addToSet: '$subject' },
         },
       },
-      { $project: { _id: 0, year: '$_id.year', examType: '$_id.examType', count: 1, subjects: 1 } },
-      { $sort: { year: -1, examType: 1 } },
+      { $project: { _id: 0, year: '$_id.year', examType: '$_id.examType', subject: '$_id.subject', count: 1 } },
+      { $sort: { year: -1, examType: 1, subject: 1 } },
     ])
     return { exams }
   })
 
-  // 특정 기출의 문제 목록
+  // 특정 기출의 문제 목록 (과목 필터 선택)
   app.get('/exam', async (req) => {
     const q = z
-      .object({ year: z.coerce.number().int(), examType: z.string().min(1) })
+      .object({ year: z.coerce.number().int(), examType: z.string().min(1), subject: z.string().optional() })
       .parse(req.query)
-    const questions = await QuestionModel.find({ year: q.year, examType: q.examType }).sort({
-      subject: 1,
-      number: 1,
-    })
-    return { year: q.year, examType: q.examType, questions }
+    const filter: Record<string, unknown> = { year: q.year, examType: q.examType }
+    if (q.subject) filter.subject = q.subject
+    const questions = await QuestionModel.find(filter).sort({ subject: 1, number: 1 })
+    return { year: q.year, examType: q.examType, subject: q.subject ?? null, questions }
   })
 }
 
