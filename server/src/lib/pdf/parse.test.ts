@@ -24,16 +24,20 @@ describe('structurePassage', () => {
 const SUBJECTS = ['국어', '영어', '한국사', '행정법총론', '행정학개론']
 
 describe('parseFileMeta', () => {
-  it('언더스코어 형식을 파싱한다', () => {
-    expect(parseFileMeta('2026_국어_문제.pdf', SUBJECTS)).toEqual({ year: 2026, subject: '국어', kind: '문제' })
-    expect(parseFileMeta('2026_국어_정답.pdf', SUBJECTS)).toEqual({ year: 2026, subject: '국어', kind: '정답' })
+  it('연도·시험·과목·종류를 파싱한다', () => {
+    expect(parseFileMeta('2025_국가직_국어_문제.pdf', SUBJECTS)).toEqual({ year: 2025, examType: '국가직', subject: '국어', kind: '문제' })
+    expect(parseFileMeta('2025_지방직_정답.pdf', SUBJECTS)).toEqual({ year: 2025, examType: '지방직', subject: null, kind: '정답' })
   })
-  it('대괄호 제목 형식도 과목·연도를 잡는다', () => {
+  it('서울시는 지방직으로 합친다', () => {
+    expect(parseFileMeta('2025_서울시_국어_문제.pdf', SUBJECTS).examType).toBe('지방직')
+  })
+  it('대괄호 제목 형식도 과목·연도·시험을 잡는다', () => {
     const m = parseFileMeta('[행정법총론] 2026년 국가직 9급 행정법총론 기출문제.pdf', SUBJECTS)
-    expect(m).toEqual({ year: 2026, subject: '행정법총론', kind: '문제' })
+    expect(m).toEqual({ year: 2026, examType: '국가직', subject: '행정법총론', kind: '문제' })
   })
-  it('과목을 못 찾으면 null', () => {
+  it('과목/시험을 못 찾으면 null', () => {
     expect(parseFileMeta('2026_회계학_문제.pdf', SUBJECTS).subject).toBeNull()
+    expect(parseFileMeta('2026_국어_문제.pdf', SUBJECTS).examType).toBeNull()
   })
 })
 

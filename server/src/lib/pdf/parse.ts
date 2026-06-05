@@ -111,13 +111,15 @@ export function parseAnswerTable(text: string): Record<string, number[]> {
 export function parseFileMeta(
   filename: string,
   subjects: string[],
-): { year: number; subject: string | null; kind: '문제' | '정답' } {
+): { year: number; examType: string | null; subject: string | null; kind: '문제' | '정답' } {
   const base = filename.replace(/\.pdf$/i, '')
   const yearM = base.match(/20\d{2}/)
   const year = yearM ? Number(yearM[0]) : NaN
   const kind: '문제' | '정답' = /정답/.test(base) ? '정답' : '문제'
+  // 서울시는 지방직과 공통문제이므로 지방직으로 합친다.
+  const examType = /지방직|서울시/.test(base) ? '지방직' : /국가직/.test(base) ? '국가직' : null
   const subject = subjects.filter((s) => base.includes(s)).sort((a, b) => b.length - a.length)[0] ?? null
-  return { year, subject, kind }
+  return { year, examType, subject, kind }
 }
 
 // 과목 정답행(1-based) 을 문항에 병합. 정답 없거나 보기 범위를 벗어나면 그 문항 제외.
