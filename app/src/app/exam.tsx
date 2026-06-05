@@ -36,7 +36,7 @@ export default function ExamSubjectsScreen() {
 
         {subjects.map((e) => (
           <Pressable
-            key={e.subject}
+            key={e.subject ?? e.examType}
             onPress={() =>
               router.push(
                 `/quiz?year=${e.year}&examType=${encodeURIComponent(e.examType)}&subject=${encodeURIComponent(e.subject)}`,
