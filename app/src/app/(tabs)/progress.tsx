@@ -1,7 +1,8 @@
-import { ScrollView, View } from 'react-native'
+import { ScrollView, View, Pressable } from 'react-native'
+import { useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../../lib/api'
-import type { SummaryResponse } from '../../lib/types'
+import type { SummaryResponse, WrongResponse } from '../../lib/types'
 import { Screen } from '../../components/Screen'
 import { Txt } from '../../components/Txt'
 import { Card } from '../../components/Card'
@@ -10,17 +11,35 @@ import { ProgressBar } from '../../components/ProgressBar'
 import { color, space } from '../../theme/tokens'
 
 export default function ProgressScreen() {
+  const router = useRouter()
   const summary = useQuery({
     queryKey: ['summary'],
     queryFn: () => apiFetch<SummaryResponse>('/progress/summary'),
   })
+  const wrong = useQuery({
+    queryKey: ['wrong'],
+    queryFn: () => apiFetch<WrongResponse>('/progress/wrong'),
+  })
   const o = summary.data?.overall
   const bySubject = summary.data?.bySubject ?? []
+  const wrongCount = wrong.data?.count ?? 0
 
   return (
     <Screen>
       <ScrollView contentContainerStyle={{ padding: space.lg, gap: space.lg }}>
         <Txt variant="display">진도율</Txt>
+
+        <Pressable onPress={() => router.push('/wrong')}>
+          <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Txt variant="bodyBold">오답노트</Txt>
+              <Txt variant="caption" color={color.textMuted} style={{ marginTop: 2 }}>
+                틀린 문제 {wrongCount}개를 해설과 함께 복습
+              </Txt>
+            </View>
+            <Txt variant="body" color={color.primary}>보기 ›</Txt>
+          </Card>
+        </Pressable>
 
         <View style={{ flexDirection: 'row', gap: space.md }}>
           <StatCard value={`${o?.progressRate ?? 0}%`} label="진도율" accent={color.primary} />

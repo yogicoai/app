@@ -1,11 +1,24 @@
 export interface Question {
   _id: string
   subject: string
+  number?: number
+  year?: number
   passage?: string // 지문(있을 때만). 발문은 questionText.
   questionText: string
   choices: string[]
   answerIndex: number
   explanation?: string
+}
+
+export interface WrongItem {
+  question: Question
+  attempts: number
+  lastAttemptedAt?: string
+}
+
+export interface WrongResponse {
+  count: number
+  items: WrongItem[]
 }
 
 export interface TodayResponse {

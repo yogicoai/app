@@ -34,6 +34,22 @@ const progressRoutes: FastifyPluginAsync = async (app) => {
     return { progress }
   })
 
+  // 오답노트: 현재 '틀림' 상태인 문제 + 해설
+  app.get('/wrong', { preHandler: [app.authenticate] }, async (req) => {
+    const items = await ProgressModel.find({ userId: req.user.sub, status: 'wrong' })
+      .sort({ lastAttemptedAt: -1 })
+      .populate('questionId')
+      .limit(200)
+    const out = items
+      .filter((p) => p.questionId)
+      .map((p) => ({
+        question: p.questionId,
+        attempts: p.attempts,
+        lastAttemptedAt: p.lastAttemptedAt,
+      }))
+    return { count: out.length, items: out }
+  })
+
   // 복습 예정(due) 문제 목록
   app.get('/due', { preHandler: [app.authenticate] }, async (req) => {
     const items = await ProgressModel.find({
