@@ -39,6 +39,9 @@ export interface Term {
   term: string
   definition: string
   example?: string
+  years?: number[]
+  examTypes?: string[]
+  origins?: { year?: number; examType?: string; number?: number }[]
 }
 
 export interface TermsResponse {

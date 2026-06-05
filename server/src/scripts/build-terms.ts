@@ -12,14 +12,10 @@ const ONLY = process.env.SUBJECT
 const RESET = process.env.RESET === '1'
 
 const SYSTEM =
-  '너는 9급 공무원 시험 대비 용어 사전 편집자다. 주어진 한 문제(지문·발문·보기)에서 ' +
-  '수험생이 반드시 알아야 할 핵심 용어(키워드)를 뽑아 각각 설명한다.\n' +
-  '규칙:\n' +
-  '1) 일반 단어가 아니라 그 과목의 출제 포인트가 되는 개념어/법률용어/문법용어/제도명/인물·사건 위주로 고른다.\n' +
-  '2) term 은 간결한 명사형 키워드(예: "공정력", "불가쟁력", "비례원칙", "갑오개혁", "형태소"). 긴 설명 문장 금지.\n' +
-  '3) definition 은 그 키워드의 핵심을 2~3문장으로(의미 + 시험 포인트). 정확하고 사실 오류 없이.\n' +
-  '4) example 은 한 줄(없으면 ""). \n' +
-  '5) 한 문제에서 3~6개. 문제 풀이와 무관한 잡다한 단어는 넣지 마라.\n' +
+  '너는 9급 공무원 시험 대비 학습 사전 편집자다. 주어진 한 문제(지문·발문·보기)에서 학습 항목을 뽑아 정리한다. 과목에 따라 방식이 다르다.\n' +
+  '■ 영어 과목 = 단어 정리: 시험에 중요한 영단어·숙어를 뽑는다. term=영어 단어/숙어(원형/기본형), definition=한국어 뜻(여러 뜻이면 콤마로)과 간단한 쓰임이나 동의어. 어휘 문제의 보기 단어들도 모두 포함한다.\n' +
+  '■ 그 외 과목(국어·한국사·행정법총론·행정학개론) = 용어 정리: 출제 포인트가 되는 개념어/법률용어/문법용어/제도/인물·사건을 뽑는다. term=간결한 명사형 키워드(예: "공정력", "비례원칙", "갑오개혁", "형태소"), definition=2~3문장 설명(의미 + 시험 포인트).\n' +
+  '공통: term 은 짧게(설명 문장 금지), definition 은 정확하게(사실 오류 금지), example 은 한 줄(없으면 ""). 한 문제에서 3~8개. 문제와 무관한 잡다한 항목은 넣지 마라.\n' +
   '반드시 {"terms":[{"term":"","definition":"","example":""}]} JSON 만 출력한다.'
 
 function buildUser(q: { subject: string; unit?: string; passage?: string; questionText: string; choices: string[] }): string {
@@ -53,7 +49,7 @@ function parseTerms(raw: string): ParsedTerm[] {
     const r = t as Record<string, unknown>
     const term = typeof r.term === 'string' ? r.term.trim() : ''
     const definition = typeof r.definition === 'string' ? r.definition.trim() : ''
-    if (!term || !definition || term.length > 30) continue // 키워드는 짧아야
+    if (!term || !definition || term.length > 40) continue // 키워드/단어는 짧아야(숙어 허용)
     const example = typeof r.example === 'string' && r.example.trim() ? r.example.trim() : undefined
     out.push({ term, definition, example })
   }
@@ -75,14 +71,19 @@ async function main() {
   let dup = 0
   let failed = 0
   for (const raw of questions) {
-    const q = raw as unknown as { subject: string; unit?: string; passage?: string; questionText: string; choices: string[]; number: number }
+    const q = raw as unknown as { subject: string; unit?: string; passage?: string; questionText: string; choices: string[]; number: number; year?: number; examType?: string }
     try {
       const res = await chatJson(SYSTEM, buildUser(q), { model: MODEL })
       const terms = parseTerms(res)
       for (const t of terms) {
         const key = `${q.subject}:${t.term}`
+        const origin = q.year && q.number ? { year: q.year, examType: q.examType, number: q.number } : null
         const exists = await TermModel.exists({ key })
         if (exists) {
+          // 이미 있는 용어면 출처(연도·시험·문항)만 누적
+          const add: Record<string, unknown> = { years: q.year, examTypes: q.examType }
+          if (origin) add.origins = origin
+          await TermModel.updateOne({ key }, { $addToSet: add })
           dup++
           continue
         }
@@ -93,6 +94,9 @@ async function main() {
           term: t.term,
           definition: t.definition,
           example: t.example,
+          years: q.year ? [q.year] : [],
+          examTypes: q.examType ? [q.examType] : [],
+          origins: origin ? [origin] : [],
           source: 'ai',
           model: MODEL,
         })

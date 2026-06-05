@@ -9,6 +9,13 @@ const termSchema = new Schema(
     definition: { type: String, required: true }, // 정의(2~3문장)
     example: { type: String }, // 기출 맥락 예시(선택)
     relatedConcepts: { type: [String], default: [] },
+    years: { type: [Number], default: [] }, // 출처 연도(여러 시험에 나오면 누적)
+    examTypes: { type: [String], default: [] }, // 출처 시험유형(국가직 등)
+    // 어느 문제(지문)에서 발췌했는지
+    origins: {
+      type: [new Schema({ year: Number, examType: String, number: Number }, { _id: false })],
+      default: [],
+    },
     source: { type: String, enum: ['ai', 'manual'], default: 'ai' },
     model: { type: String }, // 생성 모델
     key: { type: String, unique: true, sparse: true, index: true }, // 멱등: `${subject}:${term}`
