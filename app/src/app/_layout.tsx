@@ -48,6 +48,7 @@ export default function RootLayout() {
             <Stack.Screen name="exam" options={{ headerShown: true, title: '과목 선택' }} />
             <Stack.Screen name="quiz" options={{ headerShown: true, title: '문제 풀이' }} />
             <Stack.Screen name="wrong" options={{ headerShown: true, title: '오답노트' }} />
+            <Stack.Screen name="diagnose" options={{ headerShown: true, title: 'AI 약점 진단' }} />
           </Stack>
         )}
       </SafeAreaProvider>

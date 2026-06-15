@@ -4,7 +4,8 @@ import { useRouter, useLocalSearchParams } from 'expo-router'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiFetch } from '../lib/api'
 import { quizKey, loadProgress, saveProgress, clearProgress } from '../lib/quizProgress'
-import type { Question } from '../lib/types'
+import { questionSource } from '../lib/source'
+import type { Question, ReviewResponse } from '../lib/types'
 import { Screen } from '../components/Screen'
 import { Txt } from '../components/Txt'
 import { Card } from '../components/Card'
@@ -18,31 +19,49 @@ type AnswerResult = { subject: string; correct: boolean }
 export default function QuizScreen() {
   const router = useRouter()
   const qc = useQueryClient()
-  const params = useLocalSearchParams<{ year?: string; examType?: string; subject?: string; mode?: string; daily?: string }>()
+  const params = useLocalSearchParams<{ year?: string; examType?: string; subject?: string; mode?: string; daily?: string; review?: string; diagnostic?: string }>()
   const isExam = !!params.year
   const isDaily = params.daily === '1' && !!params.subject // 오늘의 기출(과목 선택)
+  const isReview = params.review === '1' // 약점 재출제(약점 단원 집중)
+  const isDiagnostic = params.diagnostic === '1' // 콜드스타트 진단(5과목 골고루)
+  const fresh = isReview || isDiagnostic // 진입할 때마다 새 세트(이어풀기·캐시 사용 안 함)
   const realMode = params.mode === 'exam' // 실전 모의고사(즉시 채점·해설 없음, 시간측정)
   const examLabel = isExam
     ? `${params.year} ${params.examType ?? ''} ${params.subject ?? ''}`.replace(/\s+/g, ' ').trim()
-    : isDaily
-      ? `오늘의 ${params.subject}`
-      : '오늘의 학습'
+    : isDiagnostic
+      ? '약점 진단'
+      : isReview
+        ? '약점 재출제'
+        : isDaily
+          ? `오늘의 ${params.subject}`
+          : '오늘의 학습'
 
   const query = useQuery({
     queryKey: isExam
       ? ['exam', params.year, params.examType, params.subject]
-      : isDaily
-        ? ['daily', params.subject]
-        : ['today'],
+      : isDiagnostic
+        ? ['diagnostic']
+        : isReview
+          ? ['review']
+          : isDaily
+            ? ['daily', params.subject]
+            : ['today'],
     queryFn: () =>
       isExam
         ? apiFetch<{ questions: Question[] }>(
             `/content/exam?year=${params.year}&examType=${encodeURIComponent(String(params.examType ?? ''))}` +
               (params.subject ? `&subject=${encodeURIComponent(String(params.subject))}` : ''),
           )
-        : isDaily
-          ? apiFetch<{ questions: Question[] }>(`/content/daily?subject=${encodeURIComponent(String(params.subject))}`, { auth: false })
-          : apiFetch<{ questions: Question[] }>('/content/today', { auth: false }),
+        : isDiagnostic
+          ? apiFetch<{ questions: Question[] }>('/content/diagnostic', { auth: false })
+          : isReview
+            ? apiFetch<ReviewResponse>('/progress/review?limit=10')
+            : isDaily
+              ? apiFetch<{ questions: Question[] }>(`/content/daily?subject=${encodeURIComponent(String(params.subject))}`, { auth: false })
+              : apiFetch<{ questions: Question[] }>('/content/today', { auth: false }),
+    // 약점 재출제·진단은 진입할 때마다 새로 받아야 하므로 캐시를 쓰지 않는다.
+    staleTime: fresh ? 0 : undefined,
+    refetchOnMount: fresh ? 'always' : undefined,
   })
 
   const [idx, setIdx] = useState(0)
@@ -56,14 +75,23 @@ export default function QuizScreen() {
   // 이어풀기: 진행 상태 로컬 저장/복원
   const progressKey = isExam
     ? quizKey({ year: params.year, examType: params.examType, subject: params.subject })
-    : isDaily
-      ? `daily:${params.subject}`
-      : quizKey('today')
+    : isDiagnostic
+      ? 'diagnostic'
+      : isReview
+        ? 'review'
+        : isDaily
+          ? `daily:${params.subject}`
+          : quizKey('today')
   const [restored, setRestored] = useState(false)
   const [resumed, setResumed] = useState(false)
 
   useEffect(() => {
     if (restored || questions.length === 0) return
+    if (fresh) {
+      // 약점 재출제·진단은 매번 새로 구성되므로 이어풀기 복원을 하지 않는다.
+      setRestored(true)
+      return
+    }
     let cancelled = false
     loadProgress(progressKey).then((p) => {
       if (cancelled) return
@@ -83,6 +111,7 @@ export default function QuizScreen() {
 
   useEffect(() => {
     if (!restored || done || questions.length === 0) return
+    if (fresh) return // 약점 재출제·진단은 매번 새 세트 — 이어풀기 저장 안 함(orphan 방지)
     if (idx === 0 && results.length === 0 && !answered) return // 진행 없음
     saveProgress({
       key: progressKey,
@@ -100,6 +129,8 @@ export default function QuizScreen() {
   const startedAtRef = useRef(Date.now())
   const qStartRef = useRef(Date.now())
   const [elapsedSec, setElapsedSec] = useState(0)
+  // 풀이 기록(fire-and-forget) 프로미스 모음 — 진단 진입 전 커밋 보장용
+  const pendingAttempts = useRef<Promise<unknown>[]>([])
 
   useEffect(() => {
     qStartRef.current = Date.now() // 문항 바뀌면 측정 시작점 리셋
@@ -125,8 +156,11 @@ export default function QuizScreen() {
   if (questions.length === 0) {
     return (
       <Screen>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <Txt color={color.textMuted}>문제가 없어요.</Txt>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: space.lg, gap: space.md }}>
+          <Txt color={color.textMuted} style={{ textAlign: 'center' }}>
+            {isReview ? '아직 약점으로 잡힌 단원이 없어요.\n문제를 더 풀면 약점을 찾아 재출제해줄게요.' : '문제가 없어요.'}
+          </Txt>
+          <Button title="← 돌아가기" variant="secondary" onPress={() => router.back()} />
         </View>
       </Screen>
     )
@@ -159,6 +193,8 @@ export default function QuizScreen() {
       setAnswered(false)
       setResults([])
       setDone(false)
+      // 약점 재출제는 '다시 풀기' 때 최신 약점으로 새 세트를 받는다.
+      if (isReview) qc.invalidateQueries({ queryKey: ['review'] })
     }
 
     return (
@@ -176,7 +212,9 @@ export default function QuizScreen() {
           </View>
 
           <Card>
-            <Txt variant="h2" style={{ marginBottom: space.sm }}>과목별 약점 분석</Txt>
+            <Txt variant="h2" style={{ marginBottom: space.sm }}>
+              {isDiagnostic ? '진단 결과 — 과목별' : isReview ? '이번 재출제 결과' : '과목별 약점 분석'}
+            </Txt>
             {rows.map((r, i) => (
               <View key={r.subject} style={{ marginTop: space.md }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -196,13 +234,34 @@ export default function QuizScreen() {
               </View>
             ))}
             {weakest && (
-              <Txt variant="body" color={color.textSecondary} style={{ marginTop: space.lg }}>
-                🎯 <Txt variant="bodyBold" color={color.error}>{weakest.subject}</Txt> 과목이 가장 약해요. 이 과목을 더 풀어보세요.
-              </Txt>
+              isDiagnostic ? (
+                <Txt variant="body" color={color.textSecondary} style={{ marginTop: space.lg }}>
+                  🎯 아래 버튼으로 AI 진단을 받아보세요. 약점 과목·단원과 학습 방향을 알려드려요.
+                </Txt>
+              ) : isReview ? (
+                <Txt variant="body" color={color.textSecondary} style={{ marginTop: space.lg }}>
+                  🎯 약점 단원을 반복해 풀수록 약점이 줄어들어요. 진도 탭에서 약점 변화를 확인하세요.
+                </Txt>
+              ) : (
+                <Txt variant="body" color={color.textSecondary} style={{ marginTop: space.lg }}>
+                  🎯 <Txt variant="bodyBold" color={color.error}>{weakest.subject}</Txt> 과목이 가장 약해요. 이 과목을 더 풀어보세요.
+                </Txt>
+              )
             )}
           </Card>
 
-          <Button title="다시 풀기" onPress={reset} />
+          {isDiagnostic ? (
+            <Button
+              title="AI 진단 결과 보기"
+              onPress={async () => {
+                // 마지막 풀이 기록이 서버에 반영된 뒤 진단(0풀이 오판 방지)
+                await Promise.allSettled(pendingAttempts.current)
+                router.replace('/diagnose')
+              }}
+            />
+          ) : (
+            <Button title="다시 풀기" onPress={reset} />
+          )}
           <Button title="← 돌아가기" variant="secondary" onPress={() => router.back()} />
         </ScrollView>
       </Screen>
@@ -213,7 +272,10 @@ export default function QuizScreen() {
 
   const advance = () => {
     if (idx + 1 >= questions.length) {
+      // 진도 탭의 요약·약점 단원·오답노트가 방금 풀이를 반영하도록 무효화.
       qc.invalidateQueries({ queryKey: ['summary'] })
+      qc.invalidateQueries({ queryKey: ['weakness'] })
+      qc.invalidateQueries({ queryKey: ['wrong'] })
       clearProgress(progressKey)
       setDone(true)
       return
@@ -228,8 +290,10 @@ export default function QuizScreen() {
     const isCorrect = selected === q.answerIndex
     const timeSpentMs = Date.now() - qStartRef.current
     setResults((r) => [...r, { subject: q.subject, correct: isCorrect }])
-    // 저장 실패는 학습 흐름을 막지 않음(fire-and-forget)
-    apiFetch('/progress/attempt', { method: 'POST', body: { questionId: q._id, correct: isCorrect, timeSpentMs } }).catch(() => {})
+    // 저장 실패는 학습 흐름을 막지 않음(fire-and-forget). 단 진단 진입 전 커밋 보장 위해 프로미스를 모은다.
+    pendingAttempts.current.push(
+      apiFetch('/progress/attempt', { method: 'POST', body: { questionId: q._id, correct: isCorrect, timeSpentMs } }).catch(() => {}),
+    )
     if (realMode) advance() // 실전: 즉시 채점/해설 없이 다음 문항
     else setAnswered(true)
   }
@@ -275,6 +339,11 @@ export default function QuizScreen() {
         ) : null}
 
         <Txt variant="h2">{q.questionText}</Txt>
+        {questionSource(q) ? (
+          <Txt variant="caption" color={color.textMuted} style={{ marginTop: -space.sm }}>
+            출처 · {questionSource(q)}
+          </Txt>
+        ) : null}
 
         <View>
           {q.choices.map((c, i) => (

@@ -9,9 +9,35 @@ export interface ParsedQuestion extends ExtractedItem {
   answerIndex: number
 }
 
+// pdfjs 가 임베드 서브셋 폰트의 책표지 괄호 『 』(U+300E/U+300F)를 ToUnicode 누락으로
+// 사설영역 U+F000 으로 잘못 뱉는다 — 여는·닫는 괄호가 같은 코드로 들어온다.
+// 괄호는 항상 짝(열고-닫고)으로 나타나므로 열림 상태를 토글하며 복원한다:
+//   닫혀 있으면 여는 『, 열려 있으면 닫는 』. (직전 글자에 의존하던 방식은
+//   '법전인 『경국대전』'처럼 낱말 바로 뒤에 여는 괄호가 오는 지배적 패턴을 오판해 폐기.)
+// 텍스트에 정상 『 』 가 섞여 있으면 그 상태도 반영해 토글이 어긋나지 않게 한다.
+// 가정: 한 문자열 안에서 F000 은 짝수개(열고-닫고)로 온다 — 실데이터(연도·과목별 PDF)에서 모두 짝수·균형 확인됨.
+// 그 밖의 사설영역(E000–F8FF)·치환문자(U+FFFD)는 의미 복원이 불가하므로 제거한다.
+export function sanitizeGlyphs(s: string): string {
+  let out = ''
+  let open = false
+  for (const ch of s) {
+    const cp = ch.codePointAt(0)!
+    if (cp === 0xf000) {
+      out += open ? '』' : '『'
+      open = !open
+      continue
+    }
+    if (cp === 0xfffd || (cp >= 0xe000 && cp <= 0xf8ff)) continue
+    if (ch === '『') open = true
+    else if (ch === '』') open = false
+    out += ch
+  }
+  return out
+}
+
 // pdfjs 는 자간을 공백으로 넣어 "국 어" 처럼 깨지므로, 연속 공백을 한 칸으로 정리.
 export function normalizePageText(s: string): string {
-  return s.replace(/\s+/g, ' ').trim()
+  return sanitizeGlyphs(s).replace(/\s+/g, ' ').trim()
 }
 
 // 한 줄로 평탄화된 지문에 구조적 줄바꿈을 보강한다(내용 단어는 보존, 마커 경계에만 \n 삽입).
@@ -36,7 +62,7 @@ export function stripChoiceMarker(c: string): string {
 
 // 문장부호·따옴표·괄호 주변의 남은 공백을 정리(한글 단어 사이 공백은 건드리지 않음).
 export function tidyText(s: string): string {
-  return s
+  return sanitizeGlyphs(s)
     .replace(/\s+/g, ' ')
     .replace(/\s+([?!.,;:)\]}>’”」』》])/g, '$1') // 닫는 기호/문장부호 앞 공백 제거
     .replace(/([(\[{<‘“「『《])\s+/g, '$1') // 여는 기호 뒤 공백 제거

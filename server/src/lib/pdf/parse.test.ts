@@ -1,5 +1,35 @@
 import { describe, it, expect } from 'vitest'
-import { validateExtracted, mergeAnswerKey, parseAnswerTable, normalizePageText, tidyText, assembleDocItems, parseFileMeta, stripChoiceMarker, structurePassage } from './parse'
+import { validateExtracted, mergeAnswerKey, parseAnswerTable, normalizePageText, tidyText, assembleDocItems, parseFileMeta, stripChoiceMarker, structurePassage, sanitizeGlyphs } from './parse'
+
+// pdfjs 가 책표지 괄호 『 』 를 떨어뜨리는 사설영역 코드포인트(U+F000)
+const F = String.fromCodePoint(0xf000)
+const REPL = String.fromCodePoint(0xfffd)
+
+describe('sanitizeGlyphs', () => {
+  it('사설영역 U+F000(깨진 『』)을 짝 토글로 여닫는 책표지 괄호로 복원한다', () => {
+    expect(sanitizeGlyphs(`③ ${F}경국대전${F}을 저술`)).toBe('③ 『경국대전』을 저술')
+  })
+  it('문장 맨 앞의 U+F000은 여는 『 로 복원한다', () => {
+    expect(sanitizeGlyphs(`${F}삼국사기${F}는 역사서`)).toBe('『삼국사기』는 역사서')
+  })
+  it('낱말(조사/명사) 바로 뒤에 여는 괄호가 와도 올바르게 연다', () => {
+    // pdfjs 가 "법전인 『경국대전』" 을 "법전인 <F000>경국대전<F000>" 으로 뱉는 지배적 패턴
+    expect(sanitizeGlyphs(`법전인 ${F}경국대전${F}을`)).toBe('법전인 『경국대전』을')
+    expect(sanitizeGlyphs(`정약용의 ${F}목민심서${F}를`)).toBe('정약용의 『목민심서』를')
+  })
+  it('책 제목이 비낱말 문자(한자 병기 괄호 등)로 끝나도 닫는다', () => {
+    expect(sanitizeGlyphs(`${F}맹자(孟子)${F}를`)).toBe('『맹자(孟子)』를')
+  })
+  it('연속된 두 책이름도 각각 짝을 맞춘다', () => {
+    expect(sanitizeGlyphs(`${F}가${F}${F}나${F}`)).toBe('『가』『나』')
+  })
+  it('그 밖의 사설영역·치환문자(U+FFFD)는 제거한다', () => {
+    expect(sanitizeGlyphs(`가나${REPL}다`)).toBe('가나다')
+  })
+  it('정상 텍스트는 그대로 둔다', () => {
+    expect(sanitizeGlyphs('경국대전은 조선의 기본 법전이다')).toBe('경국대전은 조선의 기본 법전이다')
+  })
+})
 
 describe('structurePassage', () => {
   it('○ 불릿을 줄바꿈으로 분리한다', () => {
@@ -45,6 +75,9 @@ describe('normalizePageText', () => {
   it('연속 공백·줄바꿈을 한 칸으로 정리한다', () => {
     expect(normalizePageText('가   나\n\n다')).toBe('가 나 다')
   })
+  it('추출 깨짐 U+F000(『』)도 정화한다', () => {
+    expect(normalizePageText(`③ ${F}경국대전${F}을`)).toBe('③ 『경국대전』을')
+  })
 })
 
 describe('tidyText', () => {
@@ -56,6 +89,9 @@ describe('tidyText', () => {
   })
   it('한글 단어 사이 정상 공백은 유지한다', () => {
     expect(tidyText('다음 글을 이해한 내용')).toBe('다음 글을 이해한 내용')
+  })
+  it('책표지 괄호 안쪽 공백을 정리한다(『 경국대전 』→『경국대전』)', () => {
+    expect(tidyText('『 경국대전 』 을')).toBe('『경국대전』 을')
   })
 })
 

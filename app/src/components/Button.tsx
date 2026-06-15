@@ -24,8 +24,8 @@ export function Button({
       disabled={disabled || loading}
       style={({ pressed }) => [
         {
-          height: 52,
-          borderRadius: radius.md,
+          height: 54,
+          borderRadius: radius.lg,
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'row',

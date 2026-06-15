@@ -12,7 +12,7 @@ export function ProgressBar({
 }) {
   const pct = Math.max(0, Math.min(100, value))
   return (
-    <View style={{ height, backgroundColor: color.border, borderRadius: radius.pill, overflow: 'hidden' }}>
+    <View style={{ height, backgroundColor: color.surface, borderRadius: radius.pill, overflow: 'hidden' }}>
       <View style={{ width: `${pct}%`, height: '100%', backgroundColor: fill, borderRadius: radius.pill }} />
     </View>
   )

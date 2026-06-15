@@ -1,8 +1,10 @@
+import { useCallback, useState } from 'react'
 import { ScrollView, View, Pressable } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useFocusEffect } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../../lib/api'
 import type { DailySubjectsResponse, SummaryResponse } from '../../lib/types'
+import { getCompletedDay } from '../../lib/dayProgress'
 import { Screen } from '../../components/Screen'
 import { Txt } from '../../components/Txt'
 import { Card } from '../../components/Card'
@@ -23,6 +25,23 @@ export default function HomeScreen() {
 
   const dailySubjects = daily.data?.subjects ?? []
   const o = summary.data?.overall
+
+  // Day 코스 진도(완료한 Day + 1 = 오늘 학습할 Day). 세션 끝내고 돌아오면 자동 갱신.
+  const [wordDay, setWordDay] = useState(1)
+  const [termDay, setTermDay] = useState(1)
+  useFocusEffect(
+    useCallback(() => {
+      let on = true
+      Promise.all([getCompletedDay('word'), getCompletedDay('term')]).then(([w, t]) => {
+        if (!on) return
+        setWordDay(w + 1)
+        setTermDay(t + 1)
+      })
+      return () => {
+        on = false
+      }
+    }, []),
+  )
 
   return (
     <Screen>
@@ -47,6 +66,46 @@ export default function HomeScreen() {
           <StatCard value={`${o?.accuracy ?? 0}%`} label="정답률" accent={color.success} />
           <StatCard value={`${o?.attempted ?? 0}`} label="푼 문제" />
         </View>
+
+        {(o?.attempted ?? 0) < 10 && (
+          <Pressable onPress={() => router.push('/quiz?diagnostic=1')}>
+            <Card style={{ backgroundColor: color.primarySoft }}>
+              <Txt variant="bodyBold" color={color.primary}>AI 약점 진단 받기 ›</Txt>
+              <Txt variant="caption" color={color.textSecondary} style={{ marginTop: 4 }}>
+                5과목 10문제로 시작 — 약점 과목·단원을 AI가 분석해드려요
+              </Txt>
+            </Card>
+          </Pressable>
+        )}
+
+        <View>
+          <Txt variant="h2">오늘의 암기</Txt>
+          <Txt variant="caption" color={color.textMuted} style={{ marginTop: space.xs }}>
+            매일 단어·용어를 카드로 차곡차곡 외워요
+          </Txt>
+        </View>
+        <Pressable onPress={() => router.push(`/cards?track=word&day=${wordDay}`)}>
+          <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Txt variant="bodyBold">📘 오늘의 영어 단어</Txt>
+              <Txt variant="caption" color={color.textMuted} style={{ marginTop: 2 }}>
+                Day {wordDay} · 20단어 (★최빈출부터)
+              </Txt>
+            </View>
+            <Txt variant="body" color={color.primary}>시작 ›</Txt>
+          </Card>
+        </Pressable>
+        <Pressable onPress={() => router.push(`/cards?track=term&day=${termDay}`)}>
+          <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Txt variant="bodyBold">📗 오늘의 용어정리</Txt>
+              <Txt variant="caption" color={color.textMuted} style={{ marginTop: 2 }}>
+                Day {termDay} · 15개 (대단원 순)
+              </Txt>
+            </View>
+            <Txt variant="body" color={color.primary}>시작 ›</Txt>
+          </Card>
+        </Pressable>
 
         <View>
           <Txt variant="h2">오늘의 기출</Txt>

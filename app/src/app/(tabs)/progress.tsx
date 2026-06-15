@@ -2,13 +2,15 @@ import { ScrollView, View, Pressable } from 'react-native'
 import { useRouter } from 'expo-router'
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../../lib/api'
-import type { SummaryResponse, WrongResponse } from '../../lib/types'
+import type { SummaryResponse, WrongResponse, WeaknessResponse } from '../../lib/types'
 import { Screen } from '../../components/Screen'
 import { Txt } from '../../components/Txt'
 import { Card } from '../../components/Card'
 import { StatCard } from '../../components/StatCard'
 import { ProgressBar } from '../../components/ProgressBar'
-import { color, space } from '../../theme/tokens'
+import { Button } from '../../components/Button'
+import { ReminderCard } from '../../components/ReminderCard'
+import { color, space, radius } from '../../theme/tokens'
 
 export default function ProgressScreen() {
   const router = useRouter()
@@ -20,9 +22,14 @@ export default function ProgressScreen() {
     queryKey: ['wrong'],
     queryFn: () => apiFetch<WrongResponse>('/progress/wrong'),
   })
+  const weakness = useQuery({
+    queryKey: ['weakness'],
+    queryFn: () => apiFetch<WeaknessResponse>('/progress/weakness'),
+  })
   const o = summary.data?.overall
   const bySubject = summary.data?.bySubject ?? []
   const wrongCount = wrong.data?.count ?? 0
+  const weakUnits = weakness.data?.weakUnits ?? []
 
   return (
     <Screen>
@@ -48,6 +55,44 @@ export default function ProgressScreen() {
         </View>
 
         <Card>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: space.sm }}>
+            <Txt variant="h2">약점 단원</Txt>
+            <View style={{ backgroundColor: color.primarySoft, paddingHorizontal: space.sm, paddingVertical: 2, borderRadius: radius.pill }}>
+              <Txt variant="caption" color={color.primary}>AI 태깅 기반</Txt>
+            </View>
+          </View>
+          {weakUnits.length > 0 ? (
+            <>
+              {weakUnits.map((u) => {
+                const acc = Math.round(u.accuracy * 100)
+                return (
+                  <View key={`${u.subject}:${u.unit}`} style={{ marginTop: space.md }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <Txt variant="body" style={{ flex: 1, marginRight: space.sm }} numberOfLines={1}>
+                        {u.unit}
+                      </Txt>
+                      <Txt variant="caption" color={color.textSecondary}>
+                        {u.subject} · {u.correct}/{u.attempted} · {acc}%
+                      </Txt>
+                    </View>
+                    <ProgressBar value={acc} fill={acc < 60 ? color.error : acc < 80 ? color.warning : color.success} />
+                  </View>
+                )
+              })}
+              <Button
+                title="약점 재출제 풀기"
+                onPress={() => router.push('/quiz?review=1')}
+                style={{ marginTop: space.lg }}
+              />
+            </>
+          ) : (
+            <Txt variant="body" color={color.textMuted} style={{ marginTop: space.sm }}>
+              문제를 더 풀면 자주 틀리는 단원을 찾아 집중 재출제해줄게요.
+            </Txt>
+          )}
+        </Card>
+
+        <Card>
           <Txt variant="h2" style={{ marginBottom: space.sm }}>과목별 정답률</Txt>
           {bySubject.map((s) => {
             const acc = s.attempted ? Math.round((s.correct / s.attempted) * 100) : 0
@@ -69,6 +114,8 @@ export default function ProgressScreen() {
             </Txt>
           )}
         </Card>
+
+        <ReminderCard />
       </ScrollView>
     </Screen>
   )

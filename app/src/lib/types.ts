@@ -3,6 +3,7 @@ export interface Question {
   subject: string
   number?: number
   year?: number
+  examType?: string // 국가직/지방직 (출처 표기용)
   passage?: string // 지문(있을 때만). 발문은 questionText.
   questionText: string
   choices: string[]
@@ -50,10 +51,45 @@ export interface ExamSummary {
   count: number
 }
 
+export interface WeakUnit {
+  subject: string
+  unit: string
+  attempted: number
+  correct: number
+  accuracy: number // 0~1
+  score: number
+}
+
+export interface WeaknessResponse {
+  attemptedUnits: number
+  weakUnits: WeakUnit[]
+  strongUnits: WeakUnit[]
+}
+
+export interface ReviewResponse {
+  units: string[]
+  weakUnits?: WeakUnit[]
+  questions: Question[]
+  reason?: string
+}
+
+export interface Diagnosis {
+  summary: string
+  focusAreas: string[]
+  encouragement: string
+}
+
+export interface DiagnoseResponse {
+  cached: boolean
+  diagnosis: Diagnosis
+  weakUnits?: WeakUnit[]
+}
+
 export interface Term {
   _id: string
   subject: string
   unit?: string
+  chapter?: string // 대단원(서버에서 단원→대단원 분류). 영어는 없음(단어집)
   term: string
   definition: string
   example?: string
@@ -65,4 +101,13 @@ export interface Term {
 export interface TermsResponse {
   subjects: string[]
   terms: Term[]
+}
+
+export interface CardsResponse {
+  track: 'word' | 'term'
+  day: number
+  size: number
+  total: number
+  totalDays: number
+  items: Term[]
 }

@@ -1,6 +1,7 @@
 import { ScrollView, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { apiFetch } from '../lib/api'
+import { questionSource } from '../lib/source'
 import type { WrongResponse } from '../lib/types'
 import { Screen } from '../components/Screen'
 import { Txt } from '../components/Txt'
@@ -37,9 +38,7 @@ export default function WrongScreen() {
           return (
             <Card key={Q._id ?? i} style={{ gap: space.sm }}>
               <Txt variant="caption" color={color.primary}>
-                {Q.subject}
-                {Q.number ? ` ${Q.number}번` : ''}
-                {Q.year ? ` · ${Q.year}` : ''}
+                {questionSource(Q) || `${Q.subject}${Q.number ? ` ${Q.number}번` : ''}`}
               </Txt>
               {Q.passage ? (
                 <Txt variant="caption" color={color.textMuted} style={{ lineHeight: 20 }}>

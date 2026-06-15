@@ -34,5 +34,18 @@ npm test         # vitest 단위 테스트
 ```
 앱: `app/` 에서 `npx expo start --web`.
 
-## 현재 상태 (2026-06-04)
-Phase 0 진행 중. Task 1~6 완료(코드). **블로커: `server/.env`에 `OPENAI_API_KEY` 추가하면** → 시범 태깅 → 전체 태깅 → Phase 0 완료. 다음은 Phase 1(약점 루프) + 실기출 적재.
+## 현재 상태 (2026-06-05)
+- **Phase 0 완료.** 실기출 760문제(2021~2026 국가직·지방직) 적재 + Claude AI 태깅(unit/concept) 완료, 용어 1348개 생성.
+- **Phase 1(약점 루프) 구현(코드).** DB 집계 기반(AI 비용 0): 단원별 약점 랭킹(`src/lib/weakness.ts`), `GET /progress/weakness`·`/review`(약점 재출제), 앱 진도율 탭 약점 단원 카드 + 약점 재출제.
+- **콜드스타트 AI 진단(AI 3접점 중 ②).** `src/lib/ai/diagnose.ts`(순수: 프롬프트/파싱/폴백), `GET /content/diagnostic`(진단세트 비용0), `POST /progress/diagnose`(AI 1일1회 캐싱, 무키/실패 시 DB 폴백). 앱: 홈 온보딩 카드 → 진단 퀴즈 → `diagnose` 결과 화면.
+- **푸시 알림(매일 드립).** expo-notifications(~56.0.15) 로컬 일일 알림(`app/src/lib/notifications.ts` + 진도율 탭 토글). 웹 미지원(no-op), **기기 테스트 필요**.
+- **데이터 품질 수정.** pdfjs 가 책표지 괄호 『 』를 사설영역 U+F000 으로 깨뜨리던 버그 → `sanitizeGlyphs()`(짝 토글) 추가·파이프라인 연결. 기존 DB 정정: `npm run fix:glyphs`(멱등, `--dry` 지원).
+- 검증: 서버 vitest 65/65, 앱·서버 typecheck 클린(기존 `_*.ts` 디버그 제외), 앱 웹 번들 export 성공. 멀티에이전트 리뷰 2회로 발견 결함 보완 완료.
+
+### 🔴 블로커 (사장님 액션 필요)
+**MongoDB Atlas 클러스터(`yogico.dmz6oro`)가 중단(paused) 상태** — SRV 레코드가 비어 서버/앱이 DB에 못 붙음(일반 DNS·HTTPS는 정상). 서버는 DB 연결 단계에서만 멈추고 코드는 정상 로드됨. **Atlas 콘솔에서 Resume** 필요. 복구 후: `npm run fix:glyphs`(깨진 괄호 정정) → `npm run smoke` → 앱에서 진단·약점 루프 확인.
+
+### 다음 단계
+1. Atlas 복구 → `fix:glyphs` 적용 → 진단·약점 루프 실데이터 검증, 푸시 알림 기기 테스트
+2. 모의고사 직후 재측정(AI 3접점 중 ③) · 해설 고도화 · 회원가입/결제
+3. 2025 지방직 행정학개론은 이미 적재됨(접두어 매칭). 2026 지방직은 원본 PDF 부재.

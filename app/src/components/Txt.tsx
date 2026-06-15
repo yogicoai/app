@@ -15,6 +15,7 @@ export function Txt({
     fontSize: f.size,
     lineHeight: f.lineHeight,
     fontWeight: f.weight as TextStyle['fontWeight'], // 웹 폴백용(네이티브는 fontFamily 가 굵기 결정)
+    letterSpacing: 'letterSpacing' in f ? (f as { letterSpacing: number }).letterSpacing : undefined,
     color,
   }
   return <Text style={[base, style]} {...rest} />

@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "9급 공무원 시험대비 앱 백엔드 (Fastify + MongoDB)",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "start": "tsx src/index.ts",
@@ -15,6 +18,7 @@
     "tag": "tsx src/scripts/tag-questions.ts",
     "import:pdf": "tsx src/scripts/import-pdf.ts",
     "fix": "tsx src/scripts/fix-questions.ts",
+    "fix:glyphs": "tsx src/scripts/fix-glyphs.ts",
     "migrate:passage": "tsx src/scripts/split-passage.ts",
     "terms": "tsx src/scripts/build-terms.ts",
     "explain": "tsx src/scripts/explain-questions.ts",
@@ -34,12 +38,12 @@
     "nodemon": "^3.1.14",
     "openai": "^4.104.0",
     "pdfjs-dist": "^4.10.38",
+    "tsx": "^4.19.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.9.0",
-    "tsx": "^4.19.2",
     "typescript": "^5.6.3",
     "vitest": "^2.1.9"
   }

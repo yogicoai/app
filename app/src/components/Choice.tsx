@@ -35,7 +35,7 @@ export function Choice({
         backgroundColor: p.bg,
         borderColor: p.border,
         borderWidth: 1.5,
-        borderRadius: radius.md,
+        borderRadius: radius.lg,
         paddingVertical: space.md,
         paddingHorizontal: space.md,
         marginBottom: space.sm,

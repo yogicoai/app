@@ -87,9 +87,20 @@ npx expo start --web   # 브라우저로 빠른 화면 확인 (localhost:8081)
 
 > ✅ **Phase 0 완료.** 분류 품질 검토 결과 unit이 교과서 중단원 수준(예: `조선 후기 실학`, `행정행위`)으로 일관 분류됨.
 
+### 진행 중 — Phase 1 (약점 루프) + 콜드스타트 진단 + 드립 알림
+- [x] **실기출 적재** 2021~2026 국가직·지방직 760문제 + Claude AI 태깅(unit/concept) + 용어 1348개
+- [x] **약점 진단 엔진(DB 집계, 비용 0)** 단원별 약점 랭킹(`server/src/lib/weakness.ts`) + `GET /progress/weakness`
+- [x] **약점 재출제** `GET /progress/review`(약점 단원 틀린문제 우선 → 미시도 무작위 보충) + 앱 진도율 탭 약점 카드/진입
+- [x] **콜드스타트 AI 진단** `diagnose.ts` + `GET /content/diagnostic`·`POST /progress/diagnose`(AI 1일1회 캐싱·DB 폴백) + 앱 온보딩→진단→결과 화면
+- [x] **매일 드립 알림** expo-notifications 로컬 일일 알림 + 진도율 탭 토글 (기기 테스트 필요, 웹 미지원)
+- [x] **데이터 품질** PDF 추출 깨짐(책표지 괄호 『 』→ U+F000) 정화 `sanitizeGlyphs` + 기존 DB 정정 `npm run fix:glyphs`
+- [ ] 모의고사 직후 재측정(AI 3접점 중 ③) · 해설 고도화 · 회원가입/결제
+
+> 🔴 **블로커:** MongoDB Atlas 클러스터가 **중단(paused)** 상태라 서버/앱 런타임 검증이 막혀 있다(코드·테스트·웹 번들은 모두 통과). Atlas 콘솔에서 **Resume** 후 `npm run fix:glyphs` → `npm run smoke` 로 이어서 검증.
+
 ### 다음 단계
-1. **Phase 1** 약점 루프(DB 집계 엔진 + 콜드스타트 AI 진단), 그 전 실기출 적재
-2. 이후 모의고사 → AI 해설 → 푸시 알림 → 회원가입/결제 (각 Phase 별도 계획서)
+1. Atlas 복구 → `fix:glyphs` 적용 → 진단·약점 루프 실데이터 검증 + 푸시 알림 기기 테스트
+2. 모의고사 재측정 → AI 해설 고도화 → 회원가입/결제 (각 Phase 별도 계획서)
 
 ---
 
