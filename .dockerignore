@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+.env
+.env.*
+*.log
+dist
+.git
+.gitignore
+# 기출 원본 PDF(런타임 불필요·용량) 및 로컬 디버그 스크립트
+content/raw/*.pdf
+src/scripts/_*.ts
